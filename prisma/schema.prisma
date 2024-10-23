@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id   BigInt @id @default(autoincrement())
+  uuid String @unique @default(cuid())
+
+  email    String @unique
+  password String
+
+  firstName String @map("first_name")
+  lastName  String @map("last_name")
+
+  roleId BigInt?    @map("role_id")
+  role   AdminRole? @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  auths Auth[]
+
+  @@map("admins")
+}
+
+model AdminRole {
+  id   BigInt @id @default(autoincrement())
+  uuid String @unique @default(cuid())
+
+  name        String  @unique
+  displayName String? @map("display_name")
+  description String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  admins Admin[]
+
+  @@map("admin_roles")
+}
+
+model User {
+  id   BigInt @id @default(autoincrement())
+  uuid String @unique @default(cuid())
+
+  email    String @unique
+  password String
+
+  firstName String @map("first_name")
+  lastName  String @map("last_name")
+
+  roleId BigInt?   @map("role_id")
+  role   UserRole? @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  auths Auth[]
+
+  @@map("users")
+}
+
+model UserRole {
+  id   BigInt @id @default(autoincrement())
+  uuid String @unique @default(cuid())
+
+  name        String  @unique
+  displayName String? @map("display_name")
+  description String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("user_roles")
+}
+
+model Auth {
+  id   BigInt @id @default(autoincrement())
+  uuid String @unique @default(cuid())
+
+  token          String   @unique
+  tokenEnabledAt DateTime @map("token_enabled_at")
+  tokenCreatedAt DateTime @map("token_created_at")
+  tokenExpiresAt DateTime @map("token_expires_at")
+
+  userId BigInt? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
+
+  adminId BigInt? @map("admin_id")
+  admin   Admin?  @relation(fields: [adminId], references: [id])
+
+  loginIp String?   @map("login_ip")
+  loginAt DateTime? @map("login_at")
+
+  clientId BigInt? @map("client_id")
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("auths")
+}
+
+model Client {
+  id   BigInt @id @default(autoincrement())
+  uuid String @unique @default(cuid())
+
+  name        String  @unique
+  title       String?
+  description String?
+  logo        Json?
+  url         String?
+
+  allowAdminAuth Boolean @default(false)
+  allowUserAuth  Boolean @default(false)
+
+  isEnabled Boolean @default(false)
+  isTesting Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  auths     Auth[]
+  languages ClientLanguage[]
+
+  @@map("clients")
+}
+
+model ClientLanguage {
+  clientId   BigInt
+  languageId BigInt
+
+  alias String
+
+  client   Client   @relation(fields: [clientId], references: [id])
+  language Language @relation(fields: [languageId], references: [id])
+
+  @@id([clientId, languageId])
+  @@map("client_languages")
+}
+
+model Language {
+  id   BigInt @id @default(autoincrement())
+  uuid String @unique @default(cuid())
+
+  flag        String
+  sign        String
+  description String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clients ClientLanguage[]
+
+  @@map("languages")
+}
