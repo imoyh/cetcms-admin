@@ -1,6 +1,6 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppConfiguration } from 'src/config';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -23,14 +23,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const authInfo = await this.prisma.auth.findUnique({
       where: { uuid: payload.jti },
-    });
-    console.log(authInfo);
-    return {
-      userId: payload.sub,
-      inject: {
-        config: this.config,
-        prisma: this.prisma,
+      include: {
+        client: true,
+        user: { include: { role: true } },
+        admin: { include: { role: true } },
       },
-    };
+    });
+    if (!authInfo) {
+      throw new UnauthorizedException({
+        message: 'Invalid token',
+      });
+    }
+    return authInfo;
   }
 }

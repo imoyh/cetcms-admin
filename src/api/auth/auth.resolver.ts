@@ -1,11 +1,16 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { AuthUserType } from 'src/api/api.graphql';
 import { AuthService } from './auth.service';
-import { Auth } from './entities/auth.entity';
 import { JwtAuthGuard } from './guards';
 import { UseGuards } from '@nestjs/common';
-import { CurrentClient } from 'src/api/auth/decorators/current-client.decorator';
 import { Client } from '@prisma/client';
+import { Request } from 'express';
+import {
+  CurrentAuth,
+  CurrentAuthResult,
+  CurrentClient,
+  CurrentRequest,
+} from './decorators';
 
 @Resolver('Auth')
 export class AuthResolver {
@@ -17,14 +22,21 @@ export class AuthResolver {
     @Args('password') password: string,
     @Args('type') type: AuthUserType,
     @CurrentClient({ required: true }) client: Client,
+    @CurrentRequest() request: Request,
   ) {
-    return this.authService.loginWithEmail(email, password, client, type);
+    return this.authService.loginWithEmail(
+      email,
+      password,
+      client,
+      type,
+      request,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
   @Mutation('logout')
-  logout(@Args('id') id?: string) {
-    return this.authService.logout(id);
+  logout(@CurrentAuth() auth: CurrentAuthResult, @Args('id') id?: string) {
+    return this.authService.logout(auth, id);
   }
 
   @Query('auth')

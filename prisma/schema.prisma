@@ -130,6 +130,8 @@ model Client {
   isEnabled Boolean @default(false)
   isTesting Boolean @default(false)
 
+  maxAuthCount Int @default(1) @map("max_auth_count")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

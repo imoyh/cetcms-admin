@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import * as md5 from 'crypto-js/md5';
-import * as bcrypt from 'bcrypt';
+import md5 from 'crypto-js/md5';
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class CryptoUtil {

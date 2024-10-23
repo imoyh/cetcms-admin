@@ -52,6 +52,7 @@
     "compression": "^1.7.4",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.13",
+    "get-client-ip": "^1.1.1",
     "graphql": "^16.9.0",
     "helmet": "^8.0.0",
     "knex": "^3.1.0",
