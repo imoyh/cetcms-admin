@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AppController } from 'src/app.controller';
-import { AppService } from 'src/app.service';
-import { ApiModule } from 'src/api/api.module';
-import { ConfigModule } from 'src/config/config.module';
-import { UtilsModule } from 'src/utils/utils.module';
+
+import { ApiModule } from './api/api.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { CommonModule } from './common/common.module';
+import { ConfigModule } from './config/config.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UtilsModule } from './utils/utils.module';
 
 @Module({
-  imports: [ApiModule, ConfigModule, UtilsModule, PrismaModule],
+  imports: [ConfigModule, UtilsModule, PrismaModule, ApiModule, CommonModule],
   controllers: [AppController],
   providers: [AppService],
 })

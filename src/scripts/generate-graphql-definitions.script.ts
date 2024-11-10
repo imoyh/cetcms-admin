@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { GraphQLDefinitionsFactory } from '@nestjs/graphql';
 import { join } from 'path';
 import * as process from 'process';
+
+import { Injectable, Logger } from '@nestjs/common';
+import { GraphQLDefinitionsFactory } from '@nestjs/graphql';
 
 @Injectable()
 export class GenerateGraphQLDefinitionsScript {

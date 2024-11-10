@@ -1,20 +1,17 @@
-import {
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { AuthTokenInfo, AuthUserType } from '../api.graphql';
-import { Admin, Auth, Client, User } from '@prisma/client';
-import { pickUserTypeInClient } from 'src/helpers/client';
-import { TokenFactory } from 'src/api/auth/factories/token.factory';
-import { AuthInput } from 'src/prisma/inputs';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AppConfiguration } from 'src/config';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Request } from 'express';
 import dayjs, { ManipulateType } from 'dayjs';
+import { Request } from 'express';
 import getClientIp from 'get-client-ip';
+import { TokenFactory } from 'src/common/factories';
+import { AppConfiguration } from 'src/config';
+import { Admin, Auth, AuthUserType, Client, User } from 'src/generated/graphql';
+import { pickUserTypeInClient } from 'src/helpers/client';
+import { AuthInput } from 'src/prisma/inputs';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CryptoUtil } from 'src/utils/features';
+
+import { AuthTokenInfo } from './entities';
 
 @Injectable()
 export class AuthService {
@@ -24,13 +21,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async loginWithEmail(
-    email: string,
-    password: string,
-    client: Client,
-    type?: AuthUserType,
-    request?: Request,
-  ) {
+  async loginWithEmail(email: string, password: string, client: Client, type?: AuthUserType, request?: Request) {
     type = pickUserTypeInClient(type, client);
     const { user, admin } = await this.validateUser(email, password, type);
 
@@ -39,7 +30,7 @@ export class AuthService {
     return this.createAuthInfo(client, request, type, user, admin);
   }
 
-  async logout(auth: Auth, logoutOtherAuthId?: string | bigint | number) {
+  async logout(auth: Auth, logoutOtherAuthId?: string | number) {
     if (logoutOtherAuthId && !auth.adminId) {
       throw new ForbiddenException({
         message: 'Only admin can logout other users',
@@ -52,8 +43,11 @@ export class AuthService {
     return Boolean(result);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  async refreshToken(client: Client, auth: Auth, request?: Request) {
+    const { user, admin, userType } = auth;
+    await this.cleanAuths(client, user, admin);
+
+    return this.createAuthInfo(client, request, userType as AuthUserType, user, admin);
   }
 
   /**
@@ -63,11 +57,7 @@ export class AuthService {
    * @param type
    * @private
    */
-  private async validateUser(
-    email: string,
-    password: string,
-    type: AuthUserType,
-  ) {
+  private async validateUser(email: string, password: string, type: AuthUserType) {
     let user: User | undefined;
     let admin: Admin | undefined;
     if (type === AuthUserType.USER) {
@@ -105,10 +95,7 @@ export class AuthService {
       const cleanAuths = auths.splice(0, cleanCount);
       await this.prisma.auth.deleteMany({
         where: {
-          OR: [
-            { id: { in: cleanAuths.map((auth) => auth.id) } },
-            { tokenExpiresAt: { lt: new Date() } },
-          ],
+          OR: [{ id: { in: cleanAuths.map((auth) => auth.id) } }, { tokenExpiresAt: { lt: new Date() } }],
         },
       });
       return cleanAuths;
@@ -125,13 +112,7 @@ export class AuthService {
    * @param admin
    * @private
    */
-  private async createAuthInfo(
-    client: Client,
-    request: Request,
-    type: AuthUserType,
-    user?: User,
-    admin?: Admin,
-  ) {
+  private async createAuthInfo(client: Client, request: Request, type: AuthUserType, user?: User, admin?: Admin) {
     const { jwt } = this.configService.get<typeof AppConfiguration>('app');
     const clientIp = getClientIp(request);
     const expireValue = parseInt(jwt.expiresIn);
@@ -147,6 +128,7 @@ export class AuthService {
       tokenCreatedAt: tokenCreatedAt,
       tokenExpiresAt: tokenExpiresAt,
       loginIp: clientIp,
+      userType: type,
       admin: admin ? { connect: { id: admin.id } } : undefined,
       user: user ? { connect: { id: user.id } } : undefined,
       client: { connect: { id: client.id } },

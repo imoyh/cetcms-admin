@@ -1,16 +1,19 @@
-import { Global, Module } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { GraphQLModule } from '@nestjs/graphql';
-import * as Inputs from './inputs';
 import { join } from 'path';
+
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { Global, Module } from '@nestjs/common';
+import { GraphQLModule } from '@nestjs/graphql';
+
+import * as Inputs from './inputs';
+import { PrismaService } from './prisma.service';
 
 @Global()
 @Module({
   imports: [
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      typePaths: [join(process.cwd(), 'src/api/**/*.graphql')],
+      autoSchemaFile: join(process.cwd(), 'prisma/schema.graphql'),
+      sortSchema: true,
     }),
   ],
   providers: [PrismaService, ...Object.values(Inputs)],

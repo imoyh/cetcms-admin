@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
 import * as process from 'process';
+
+import { Injectable, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from 'src/app.module';
 import { PrismaService } from 'src/prisma/prisma.service';

@@ -5,7 +5,7 @@ import * as uuid from 'uuid';
 @Injectable()
 export class AuthInput {
   static create(input: Prisma.AuthCreateInput) {
-    input.uuid = uuid.v4();
+    if (!input.uuid) input.uuid = uuid.v4();
     input.loginAt = new Date();
     return input;
   }

@@ -3,7 +3,7 @@ export const AppConfiguration = {
   host: process.env.HOST,
   environment: process.env.NODE_ENV || 'development',
   jwt: {
-    secret: process.env.APP_SECRET || 'CETCMS_SECRET_3325',
-    expiresIn: '1h',
+    secret: process.env.JWT_SECRET || 'CETCMS_SECRET_3325',
+    expiresIn: process.env.JWT_EXPIRES_IN || '1h',
   },
 };

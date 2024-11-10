@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import md5 from 'crypto-js/md5';
 import bcrypt from 'bcrypt';
+import md5 from 'crypto-js/md5';
 
 @Injectable()
 export class CryptoUtil {
@@ -9,7 +9,7 @@ export class CryptoUtil {
   }
 
   static hashPassword(password: string): string {
-    return bcrypt.hashSync(password, 16);
+    return bcrypt.hashSync(password, 8);
   }
 
   static checkPassword(password: string, hashedPassword: string): boolean {

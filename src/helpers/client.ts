@@ -1,6 +1,5 @@
-import { Client } from '@prisma/client';
-import { AuthUserType } from 'src/api/api.graphql';
 import { ForbiddenException } from '@nestjs/common';
+import { AuthUserType, Client } from 'src/generated/graphql';
 
 export function pickUserTypeInClient(type: AuthUserType, client: Client) {
   type = (type || '').toUpperCase() as AuthUserType;

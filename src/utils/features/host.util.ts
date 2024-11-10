@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
 import * as os from 'os';
+
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class HostUtil {

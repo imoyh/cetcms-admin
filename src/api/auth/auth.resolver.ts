@@ -1,46 +1,49 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { AuthUserType } from 'src/api/api.graphql';
-import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guards';
 import { UseGuards } from '@nestjs/common';
-import { Client } from '@prisma/client';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Request } from 'express';
-import {
-  CurrentAuth,
-  CurrentAuthResult,
-  CurrentClient,
-  CurrentRequest,
-} from './decorators';
+import { CurrentAuth, CurrentClient, CurrentRequest } from 'src/common/decorators';
+import { JwtAuthGuard } from 'src/common/guards';
+import { Auth, AuthUserType, Client } from 'src/generated/graphql';
 
-@Resolver('Auth')
+import { AuthService } from './auth.service';
+import { AuthTokenInfo } from './entities';
+
+@Resolver()
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
 
-  @Mutation('loginWithEmail')
+  @Mutation(() => AuthTokenInfo)
   loginWithEmail(
     @Args('email') email: string,
     @Args('password') password: string,
-    @Args('type') type: AuthUserType,
+    @Args('type', { type: () => AuthUserType, nullable: true })
+    type: AuthUserType,
     @CurrentClient({ required: true }) client: Client,
     @CurrentRequest() request: Request,
   ) {
-    return this.authService.loginWithEmail(
-      email,
-      password,
-      client,
-      type,
-      request,
-    );
+    return this.authService.loginWithEmail(email, password, client, type, request);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Mutation('logout')
-  logout(@CurrentAuth() auth: CurrentAuthResult, @Args('id') id?: string) {
+  @Mutation(() => Boolean)
+  logout(@Args('id', { nullable: true }) id: string, @CurrentAuth() auth: Auth) {
     return this.authService.logout(auth, id);
   }
 
-  @Query('auth')
-  findOne(@Args('id') id: number) {
-    return this.authService.findOne(id);
+  @UseGuards(JwtAuthGuard)
+  @Mutation(() => AuthTokenInfo)
+  refreshToken(
+    @Args('id', { nullable: true }) id: string,
+    @CurrentAuth() auth: Auth,
+    @CurrentClient({ required: true }) client: Client,
+    @CurrentRequest() request: Request,
+  ) {
+    return this.authService.refreshToken(client, auth, request);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Query(() => Auth)
+  authInfo(@CurrentAuth({ required: true }) auth: Auth) {
+    return auth;
   }
 }

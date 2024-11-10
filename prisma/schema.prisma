@@ -8,41 +8,78 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator graphql {
+  provider = "prisma-nestjs-graphql"
+  output   = "../src/generated/graphql"
+  prettier = "true"
+}
+
+generator dto {
+  provider                        = "prisma-generator-nestjs-dto"
+  output                          = "../src/generated/dto"
+  outputToNestJsResourceStructure = "false"
+  flatResourceStructure           = "false"
+  exportRelationModifierClasses   = "false"
+  reExport                        = "false"
+  createDtoPrefix                 = "Create"
+  updateDtoPrefix                 = "Update"
+  dtoSuffix                       = "Dto"
+  entityPrefix                    = ""
+  entitySuffix                    = "Model"
+  classValidation                 = "false"
+  fileNamingStyle                 = "kebab"
+  noDependencies                  = "false"
+  outputType                      = "class"
+  definiteAssignmentAssertion     = "false"
+  requiredResponseApiProperty     = "false"
+  prettier                        = "true"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Admin {
-  id   BigInt @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ input: true })
   uuid String @unique @default(cuid())
 
-  email    String @unique
+  email String @unique
+
+  /// @HideField({ output: true })
   password String
 
   firstName String @map("first_name")
   lastName  String @map("last_name")
 
-  roleId BigInt?    @map("role_id")
+  roleId Int?       @map("role_id")
   role   AdminRole? @relation(fields: [roleId], references: [id])
 
+  /// @HideField({ input: true })
   createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ input: true })
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  auths Auth[]
+  auths  Auth[]
+  medias Media[]
 
   @@map("admins")
 }
 
 model AdminRole {
-  id   BigInt @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ input: true })
   uuid String @unique @default(cuid())
 
   name        String  @unique
   displayName String? @map("display_name")
   description String?
 
+  /// @HideField({ input: true })
   createdAt DateTime @default(now()) @map("created_at")
+
+  /// @HideField({ input: true })
   updatedAt DateTime @updatedAt @map("updated_at")
 
   admins Admin[]
@@ -51,35 +88,43 @@ model AdminRole {
 }
 
 model User {
-  id   BigInt @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ input: true })
   uuid String @unique @default(cuid())
 
   email    String @unique
+  /// @HideField({ output: true })
   password String
 
   firstName String @map("first_name")
   lastName  String @map("last_name")
 
-  roleId BigInt?   @map("role_id")
+  roleId Int?      @map("role_id")
   role   UserRole? @relation(fields: [roleId], references: [id])
 
+  /// @HideField({ input: true })
   createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ input: true })
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  auths Auth[]
+  auths  Auth[]
+  medias Media[]
 
   @@map("users")
 }
 
 model UserRole {
-  id   BigInt @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ input: true })
   uuid String @unique @default(cuid())
 
   name        String  @unique
   displayName String? @map("display_name")
   description String?
 
+  /// @HideField({ input: true })
   createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ input: true })
   updatedAt DateTime @updatedAt @map("updated_at")
 
   users User[]
@@ -88,34 +133,55 @@ model UserRole {
 }
 
 model Auth {
-  id   BigInt @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ input: true })
   uuid String @unique @default(cuid())
 
+  /// @HideField({ input: true, output: true })
   token          String   @unique
+  /// @HideField({ input: true })
   tokenEnabledAt DateTime @map("token_enabled_at")
+  /// @HideField({ input: true })
   tokenCreatedAt DateTime @map("token_created_at")
+  /// @HideField({ input: true })
   tokenExpiresAt DateTime @map("token_expires_at")
 
-  userId BigInt? @map("user_id")
-  user   User?   @relation(fields: [userId], references: [id])
+  userId Int?  @map("user_id")
+  /// @HideField({ input: true })
+  user   User? @relation(fields: [userId], references: [id])
 
-  adminId BigInt? @map("admin_id")
-  admin   Admin?  @relation(fields: [adminId], references: [id])
+  adminId Int?   @map("admin_id")
+  /// @HideField({ input: true })
+  admin   Admin? @relation(fields: [adminId], references: [id])
 
+  /// @HideField({ input: true })
+  userType AuthUserType? @map("auth_user_type")
+
+  /// @HideField({ input: true })
   loginIp String?   @map("login_ip")
+  /// @HideField({ input: true })
   loginAt DateTime? @map("login_at")
 
-  clientId BigInt? @map("client_id")
+  clientId Int?    @map("client_id")
+  /// @HideField({ input: true })
   client   Client? @relation(fields: [clientId], references: [id])
 
+  /// @HideField({ input: true })
   createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ input: true })
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("auths")
 }
 
+enum AuthUserType {
+  USER
+  ADMIN
+}
+
 model Client {
-  id   BigInt @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ input: true })
   uuid String @unique @default(cuid())
 
   name        String  @unique
@@ -132,40 +198,132 @@ model Client {
 
   maxAuthCount Int @default(1) @map("max_auth_count")
 
+  /// @HideField({ input: true })
   createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ input: true })
   updatedAt DateTime @updatedAt @map("updated_at")
 
   auths     Auth[]
   languages ClientLanguage[]
+  menus     ClientMenu[]
+  medias    Media[]
 
   @@map("clients")
 }
 
 model ClientLanguage {
-  clientId   BigInt
-  languageId BigInt
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id])
+
+  languageId Int
+  language   Language @relation(fields: [languageId], references: [id])
 
   alias String
-
-  client   Client   @relation(fields: [clientId], references: [id])
-  language Language @relation(fields: [languageId], references: [id])
 
   @@id([clientId, languageId])
   @@map("client_languages")
 }
 
+model ClientMenu {
+  id   Int     @id @default(autoincrement())
+  /// @HideField({ input: true })
+  uuid String  @unique @default(cuid())
+  name String? @unique
+
+  label  String
+  icon   String?
+  url    String?
+  target ClientMenuTarget @default(SELF)
+
+  clientId Int?    @map("client_id")
+  /// @HideField({ input: true })
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  parentId Int?         @map("parent_id")
+  parent   ClientMenu?  @relation("client_menu", fields: [parentId], references: [id])
+  children ClientMenu[] @relation("client_menu")
+
+  @@map("client_menus")
+}
+
+enum ClientMenuTarget {
+  SELF
+  BLANK
+}
+
 model Language {
-  id   BigInt @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ input: true })
   uuid String @unique @default(cuid())
 
   flag        String
   sign        String
   description String?
 
+  /// @HideField({ input: true })
   createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ input: true })
   updatedAt DateTime @updatedAt @map("updated_at")
 
   clients ClientLanguage[]
 
   @@map("languages")
+}
+
+model Media {
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ input: true })
+  uuid String @unique @default(cuid())
+
+  fileName String        @map("file_name")
+  fileType MediaFileType @default(OTHER) @map("file_type")
+  fileExt  String        @map("file_ext")
+  fileMime String        @map("file_mime")
+  fileSize Int           @map("file_size")
+  fileMeta Json?         @map("file_meta")
+
+  storePath String         @map("store_path")
+  storeType MediaStoreType @default(LOCAL) @map("store_type")
+
+  /// @HideField({ input: true })
+  urlPath     String  @map("url_path")
+  baseUrl     String? @map("base_url")
+  title       String?
+  altText     String? @map("alt_text")
+  caption     String?
+  description String?
+
+  userId Int?  @map("user_id")
+  /// @HideField({ input: true })
+  user   User? @relation(fields: [userId], references: [id])
+
+  adminId Int?   @map("admin_id")
+  /// @HideField({ input: true })
+  admin   Admin? @relation(fields: [adminId], references: [id])
+
+  clientId Int?    @map("client_id")
+  /// @HideField({ input: true })
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  /// @HideField({ input: true })
+  createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ input: true })
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("medias")
+}
+
+enum MediaStoreType {
+  LOCAL
+  HUAWEI
+  ALYUN
+  OTHER
+}
+
+enum MediaFileType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  OTHER
 }
