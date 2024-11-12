@@ -6,7 +6,9 @@ import {
   AuthInput,
   ClientInput,
   ClientMenuInput,
-  MediaInput,
+  MediaFileInput,
+  MediaFolderBelongInput,
+  MediaFolderInput,
   UserInput,
   UserRoleInput,
 } from 'src/prisma/inputs';
@@ -24,8 +26,14 @@ const handlers: ModelsHandler = {
   Auth: {
     create: AuthInput.create,
   },
-  Media: {
-    create: MediaInput.create,
+  MediaFile: {
+    create: MediaFileInput.create,
+  },
+  MediaFolder: {
+    create: MediaFolderInput.create,
+  },
+  MediaFolderBelong: {
+    create: MediaFolderBelongInput.create,
   },
   Client: {
     create: ClientInput.create,
@@ -39,8 +47,8 @@ const handlers: ModelsHandler = {
   UserRole: {
     create: UserRoleInput.create,
   },
-  ClientLanguage: undefined,
   Language: undefined,
+  ClientLanguage: undefined,
 };
 
 export const PrismaDataHeaderMiddleware: Prisma.Middleware = async (params, next) => {

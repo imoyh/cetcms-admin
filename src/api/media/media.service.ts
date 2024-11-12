@@ -1,60 +1,124 @@
 import * as fs from 'node:fs';
 import { join } from 'path';
 
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { FileUpload } from 'graphql-upload-ts/dist/Upload';
-import { Auth, Media, MediaCreateInput, MediaStoreType } from 'src/generated/graphql';
+import { Auth, MediaFileCreateInput, MediaStoreType } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { StringUtil } from 'src/utils/features';
 
 @Injectable()
 export class MediaService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: MediaCreateInput, auth: Auth) {
-    return this.prisma.media.create({
-      data: {
-        fileName: input.fileName,
-        fileExt: input.fileExt,
-        fileMime: input.fileMime,
-        fileSize: input.fileSize,
-        storePath: input.storePath,
-        storeType: MediaStoreType.LOCAL,
-        urlPath: '',
-        baseUrl: null,
-        user: auth.userId ? { connect: { id: auth.userId } } : undefined,
-        admin: auth.adminId ? { connect: { id: auth.adminId } } : undefined,
-        client: auth.clientId ? { connect: { id: auth.clientId } } : undefined,
-      },
-    });
-  }
-
-  findAll() {
-    return `This action returns all media`;
-  }
-
-  async findOne(uuid: string) {
-    return this.prisma.media.findUnique({
-      where: {
-        uuid,
-      },
-    });
-  }
-  toFile(media: Media) {
-    if (media.storeType === MediaStoreType.LOCAL) {
-    } else {
-      throw new ForbiddenException('Unsupported store type');
+  async createFile(input: MediaFileCreateInput, auth: Auth) {
+    try {
+      input.path = StringUtil.safeDirPath(input.path);
+      const folder = await this.createFolder(input.path, auth);
+      const path = `${auth.user?.uuid || auth.admin?.uuid || auth.client?.uuid}/${folder.path}`;
+      input.path = StringUtil.safeDirPath(path);
+      return await this.prisma.mediaFile.create({
+        data: {
+          path: input.path,
+          store: input.store,
+          fileName: input.fileName,
+          fileExt: input.fileExt,
+          fileMime: input.fileMime,
+          fileSize: input.fileSize,
+          userId: auth.userId,
+          adminId: auth.adminId,
+          clientId: auth.clientId,
+          folderId: folder.id,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new BadRequestException('File already exists');
+        }
+      }
+      throw error;
     }
   }
 
-  async upload(uuid: string, file: FileUpload) {
+  async createFolder(path: string, auth: Auth) {
+    path = StringUtil.safeDirPath(path) || 'default';
+    const segments = path.split('/');
+    let parentId: number | null = null;
+    let currentPath = '';
+
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+
+      const folder = await this.prisma.mediaFolder.findFirst({
+        where: { name: segment, parentId },
+      });
+
+      if (!folder) {
+        const newFolder = await this.prisma.mediaFolder.create({
+          data: {
+            name: segment,
+            path: currentPath,
+            parentId,
+            depth: i + 1, // 设置深度
+          },
+        });
+        parentId = newFolder.id;
+
+        // 为新创建的文件夹添加权限
+        await this.prisma.mediaFolderBelong.create({
+          data: {
+            folderId: newFolder.id,
+            adminId: auth.adminId,
+            userId: auth.userId,
+            clientId: auth.clientId,
+            path: currentPath, // 设置路径
+            depth: i + 1, // 设置深度
+          },
+        });
+      } else {
+        parentId = folder.id;
+
+        // 检查用户是否已经拥有该文件夹的权限
+        const belong = await this.prisma.mediaFolderBelong.findFirst({
+          where: {
+            folderId: folder.id,
+            OR: [{ adminId: auth.adminId }, { userId: auth.userId }, { clientId: auth.clientId }],
+          },
+        });
+
+        // 如果没有权限，则为其添加
+        if (!belong) {
+          await this.prisma.mediaFolderBelong.create({
+            data: {
+              folderId: folder.id,
+              adminId: auth.adminId,
+              userId: auth.userId,
+              clientId: auth.clientId,
+              path: currentPath, // 设置路径
+              depth: i + 1, // 设置深度
+            },
+          });
+        }
+      }
+    }
+
+    return this.prisma.mediaFolder.findUnique({
+      where: { path: `/${path}/` },
+    });
+  }
+
+  async uploadFile(uuid: string, file: FileUpload) {
     const media = await this.findOne(uuid);
-    if (media.storeType !== MediaStoreType.LOCAL) {
+    if (media.store !== MediaStoreType.LOCAL) {
       throw new ForbiddenException('Unsupported store type');
     }
 
     const { createReadStream } = file;
     const stream = createReadStream();
-    const savePath = join(process.cwd(), 'data/media', media.storePath);
+    const savePath = join(process.cwd(), 'data/media', media.path);
 
     const streamToArrayBufferView = async (): Promise<NodeJS.ArrayBufferView> => {
       return new Promise((resolve, reject) => {
@@ -80,7 +144,23 @@ export class MediaService {
     return media;
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     return `This action removes a #${id} media`;
+  }
+
+  async findAll() {
+    return `This action returns all media`;
+  }
+
+  async findOne(uuid: string) {
+    return this.prisma.mediaFile.findUnique({
+      where: {
+        uuid,
+      },
+    });
+  }
+
+  async findFolders() {
+    return Promise.resolve(undefined);
   }
 }

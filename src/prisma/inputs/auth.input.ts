@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import CUID from '@paralleldrive/cuid2';
 import { Prisma } from '@prisma/client';
-import * as uuid from 'uuid';
 
 @Injectable()
 export class AuthInput {
   static create(input: Prisma.AuthCreateInput) {
-    if (!input.uuid) input.uuid = uuid.v4();
     input.loginAt = new Date();
     return input;
+  }
+
+  static generateCUID() {
+    return CUID.createId();
   }
 
   create(input: Prisma.AuthCreateInput) {

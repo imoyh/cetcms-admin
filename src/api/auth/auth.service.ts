@@ -124,6 +124,7 @@ export class AuthService {
     const expiresTime = tokenExpiresAt.getTime() - nowDate.getTime();
     const authInput = AuthInput.create({
       token: '',
+      uuid: AuthInput.generateCUID(),
       tokenEnabledAt: tokenEnabledAt,
       tokenCreatedAt: tokenCreatedAt,
       tokenExpiresAt: tokenExpiresAt,
