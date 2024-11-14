@@ -1,11 +1,11 @@
 import { join } from 'path';
 
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
 
-import { MediaController } from './media.controller';
-import { MediaResolver } from './media.resolver';
-import { MediaService } from './media.service';
+import { MediaAuthMiddleware } from './middlewares';
+import * as Resolvers from './resolvers';
+import * as Services from './services';
 
 @Module({
   imports: [
@@ -14,7 +14,10 @@ import { MediaService } from './media.service';
       serveRoot: '/media', // 访问静态文件的前缀路径
     }),
   ],
-  providers: [MediaResolver, MediaService],
-  controllers: [MediaController],
+  providers: [...Object.values(Resolvers), ...Object.values(Services)],
 })
-export class MediaModule {}
+export class MediaModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(MediaAuthMiddleware).forRoutes('/media*'); // 应用中间件到 '/media' 路径的请求
+  }
+}

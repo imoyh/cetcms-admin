@@ -5,7 +5,7 @@ import { StringUtil } from 'src/utils/features';
 @Injectable()
 export class MediaFolderBelongInput {
   static create(input: Prisma.MediaFolderBelongCreateInput) {
-    input.path = `/${StringUtil.safeDirPath(input.path)}/`;
+    input.path = StringUtil.safeDirPath(input.path);
     return input;
   }
 
