@@ -368,11 +368,14 @@ model MediaFile {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   client   Client? @relation(fields: [clientId], references: [id])
 
+  uploadAt DateTime? @map("upload_at")
+
   /// @HideField({ match: '@(*Create*|*Update*)' })
   createdAt DateTime @default(now()) @map("created_at")
   /// @HideField({ match: '@(*Create*|*Update*)' })
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([store, fileName, path], name: "storeFilePath")
   @@map("media_files")
 }
 

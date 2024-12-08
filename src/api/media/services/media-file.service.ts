@@ -4,9 +4,9 @@ import { join } from 'path';
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FileUpload } from 'graphql-upload-ts/dist/Upload';
+import { FindManyFilesArgs } from 'src/api/media/dto/find-many-files.args';
 import { MediaFolderService } from 'src/api/media/services/media-folder.service';
-import { PaginationInput } from 'src/common/dto';
-import { Auth, MediaFileCreateInput, MediaFileOrderByWithRelationInput, MediaStoreType } from 'src/generated/graphql';
+import { Auth, MediaFileCreateInput, MediaStoreType } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StringUtil } from 'src/utils/features';
 
@@ -56,6 +56,10 @@ export class MediaFileService {
       throw new ForbiddenException('Unsupported store type');
     }
 
+    if (media.uploadAt) {
+      throw new BadRequestException('File already uploaded');
+    }
+
     const { createReadStream } = file;
     const stream = createReadStream();
     const savePath = join(process.cwd(), 'data/media', media.path);
@@ -81,6 +85,13 @@ export class MediaFileService {
     if (!fs.existsSync(savePath)) fs.mkdirSync(savePath, { recursive: true });
     fs.writeFileSync(join(savePath, media.fileName), await streamToArrayBufferView());
 
+    await this.prisma.mediaFile.update({
+      where: { id: media.id },
+      data: {
+        uploadAt: new Date(),
+      },
+    });
+
     return media;
   }
 
@@ -92,16 +103,14 @@ export class MediaFileService {
     });
   }
 
-  async findItemsByPath(
-    auth: Auth,
-    path: string,
-    pagination: PaginationInput,
-    orderBy: MediaFileOrderByWithRelationInput,
-  ) {
-    const currentPath = StringUtil.safeDirPath(path);
+  async findItemsByPath(auth: Auth, args: FindManyFilesArgs) {
+    const where = args.where || {};
+    const store = where.store || MediaStoreType.LOCAL;
+    const path = StringUtil.safeDirPath(where.path);
     const folder = await this.prisma.mediaFolder.findUnique({
       where: {
-        path: currentPath,
+        path,
+        store,
         belong: {
           some: {
             userId: auth.userId || undefined,
@@ -112,9 +121,9 @@ export class MediaFileService {
       },
       include: {
         files: {
-          take: pagination.take,
-          skip: pagination.skip,
-          orderBy: orderBy,
+          take: args.take,
+          skip: args.skip,
+          orderBy: args.orderBy,
           where: {
             userId: auth.userId || undefined,
             adminId: auth.adminId || undefined,

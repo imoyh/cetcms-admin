@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Auth } from 'src/generated/graphql';
+import { Prisma } from '@prisma/client';
+import { Auth, MediaStoreType } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StringUtil } from 'src/utils/features';
 
@@ -93,17 +94,62 @@ export class MediaFolderService {
   }
 
   async findItemsByPath(auth: Auth, args: FindManyFoldersArgs) {
-    const { path, store } = args.where;
-    const currentPath = StringUtil.safeDirPath(path);
+    const where = args.where;
+    const path = StringUtil.safeDirPath(where.path);
+    const store = where.store || MediaStoreType.LOCAL;
     return this.prisma.mediaFolder.findMany({
       take: args.take,
       skip: args.skip,
       orderBy: args.orderBy,
+      include: {
+        _count: {
+          select: {
+            files: true,
+            children: true,
+          },
+        },
+      },
       where: {
         parent: {
+          path,
           store,
-          path: currentPath,
         },
+        belong: {
+          some: {
+            userId: auth.userId || undefined,
+            adminId: auth.adminId || undefined,
+            clientId: auth.clientId || undefined,
+          },
+        },
+      },
+    });
+  }
+
+  async findTreeByStore(auth: Auth, store: MediaStoreType) {
+    const depthInclude = (
+      depth: number,
+      include: Prisma.MediaFolderFindFirstArgs['include'] = {},
+      currentDepth = 1,
+    ) => {
+      include._count = {
+        select: {
+          files: true,
+          children: true,
+        },
+      };
+      if (depth > currentDepth) {
+        include.children = {
+          include: { ...include },
+        };
+        return depthInclude(depth, include, currentDepth + 1);
+      }
+      return include;
+    };
+    return this.prisma.mediaFolder.findFirst({
+      include: depthInclude(6),
+      where: {
+        store: store || MediaStoreType.LOCAL,
+        depth: 0,
         belong: {
           some: {
             userId: auth.userId || undefined,

@@ -28,11 +28,6 @@ export class AppService {
       next();
     });
 
-    this.app.use(async (req: Request, res: Response, next: () => any) => {
-      Logger.log(`# Request: ${req.method}`);
-      return next();
-    });
-
     this.app.enableCors();
 
     await this.app.listen(this.config.port, this.config.host);

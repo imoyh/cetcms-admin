@@ -3,7 +3,7 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { FindFolderWhereInput, FindManyFoldersArgs } from 'src/api/media/dto';
 import { CurrentAuth } from 'src/common/decorators';
 import { JwtAuthGuard } from 'src/common/guards';
-import { Auth, MediaFile, MediaFolder } from 'src/generated/graphql';
+import { Auth, MediaFile, MediaFolder, MediaStoreType } from 'src/generated/graphql';
 
 import { MediaFolderService } from '../services';
 
@@ -15,6 +15,11 @@ export class MediaFolderResolver {
   @Query(() => [MediaFolder])
   findMediaFolders(@CurrentAuth() auth: Auth, @Args() args: FindManyFoldersArgs) {
     return this.service.findItemsByPath(auth, args);
+  }
+
+  @Query(() => MediaFolder)
+  findStoreFolderTree(@CurrentAuth() auth: Auth, @Args('store', { type: () => MediaStoreType }) store: MediaStoreType) {
+    return this.service.findTreeByStore(auth, store);
   }
 
   @Mutation(() => MediaFolder)

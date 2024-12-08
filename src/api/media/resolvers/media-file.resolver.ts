@@ -1,10 +1,10 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { FileUpload, GraphQLUpload } from 'graphql-upload-ts';
+import { FindManyFilesArgs } from 'src/api/media/dto/find-many-files.args';
 import { CurrentAuth } from 'src/common/decorators';
-import { PaginationInput } from 'src/common/dto';
 import { JwtAuthGuard } from 'src/common/guards';
-import { Auth, MediaFile, MediaFileCreateInput, MediaFileOrderByWithRelationInput } from 'src/generated/graphql';
+import { Auth, MediaFile, MediaFileCreateInput } from 'src/generated/graphql';
 
 import { MediaFileService } from '../services';
 
@@ -27,13 +27,8 @@ export class MediaFileResolver {
   }
 
   @Query(() => [MediaFile])
-  findMediaFiles(
-    @CurrentAuth() auth: Auth,
-    @Args('path') path: string,
-    @Args('pagination') pagination: PaginationInput,
-    @Args('orderBy') orderBy: MediaFileOrderByWithRelationInput,
-  ) {
-    return this.service.findItemsByPath(auth, path, pagination, orderBy);
+  findMediaFiles(@CurrentAuth() auth: Auth, @Args() args: FindManyFilesArgs) {
+    return this.service.findItemsByPath(auth, args);
   }
 
   @ResolveField(() => String)
