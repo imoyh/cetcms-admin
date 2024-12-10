@@ -1,1 +1,1 @@
-export * from './media-create-input.pipe';
+export * from './pagination.pipe';

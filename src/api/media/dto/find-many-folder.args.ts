@@ -1,5 +1,5 @@
-import { ArgsType, Field, InputType, Int } from '@nestjs/graphql';
-import { Type } from 'class-transformer';
+import { ArgsType, Field, InputType } from '@nestjs/graphql';
+import { PaginationArgs } from 'src/common/dto';
 import { MediaFolderOrderByWithRelationInput, MediaStoreType } from 'src/generated/graphql';
 
 @InputType()
@@ -12,17 +12,10 @@ export class FindFolderWhereInput {
 }
 
 @ArgsType()
-export class FindManyFoldersArgs {
+export class FindManyFolderArgs extends PaginationArgs {
   @Field(() => FindFolderWhereInput, { nullable: true })
-  @Type(() => FindFolderWhereInput)
   where?: FindFolderWhereInput;
 
   @Field(() => MediaFolderOrderByWithRelationInput, { nullable: true })
   orderBy?: MediaFolderOrderByWithRelationInput;
-
-  @Field(() => Int, { nullable: true })
-  take?: number;
-
-  @Field(() => Int, { nullable: true })
-  skip?: number;
 }

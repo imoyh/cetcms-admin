@@ -4,23 +4,39 @@ import { join } from 'path';
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FileUpload } from 'graphql-upload-ts/dist/Upload';
-import { FindManyFilesArgs } from 'src/api/media/dto/find-many-files.args';
+import { FindManyFileArgs } from 'src/api/media/dto/find-many-file.args';
 import { MediaFolderService } from 'src/api/media/services/media-folder.service';
+import { AuthMixin } from 'src/common/interfaces';
 import { Auth, MediaFileCreateInput, MediaStoreType } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StringUtil } from 'src/utils/features';
 
 @Injectable()
-export class MediaFileService {
+export class MediaFileService implements AuthMixin {
+  private auth: Auth;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly folder: MediaFolderService,
   ) {}
 
-  async create(input: MediaFileCreateInput, auth: Auth) {
+  setAuth(auth: Auth) {
+    return (this.auth = this.folder.setAuth(auth));
+  }
+
+  getAuth() {
+    if (!this.auth) {
+      throw new ForbiddenException('Not authorized');
+    } else {
+      return this.auth;
+    }
+  }
+
+  async create(input: MediaFileCreateInput) {
+    const auth = this.getAuth();
     try {
       input.path = StringUtil.safeDirPath(input.path);
-      const folder = await this.folder.create(auth, {
+      const folder = await this.folder.create({
         store: input.store,
         path: input.path,
       });
@@ -103,10 +119,27 @@ export class MediaFileService {
     });
   }
 
-  async findItemsByPath(auth: Auth, args: FindManyFilesArgs) {
-    const where = args.where || {};
-    const store = where.store || MediaStoreType.LOCAL;
-    const path = StringUtil.safeDirPath(where.path);
+  async findMany(args: Prisma.MediaFileFindManyArgs) {
+    const { take, skip, where, orderBy, include } = args;
+    return Promise.all([
+      this.prisma.mediaFile.count({ where }),
+      this.prisma.mediaFile.findMany({
+        where,
+        orderBy,
+        include,
+        take: Math.abs(take),
+        skip: Math.abs(skip),
+      }),
+    ]).then(([count, items]) => {
+      return { count, items };
+    });
+  }
+
+  async findItemsByPath(args: FindManyFileArgs) {
+    const auth = this.getAuth();
+    const inputWhere = args.where || {};
+    const store = inputWhere.store || MediaStoreType.LOCAL;
+    const path = StringUtil.safeDirPath(inputWhere.path);
     const folder = await this.prisma.mediaFolder.findUnique({
       where: {
         path,
@@ -119,26 +152,21 @@ export class MediaFileService {
           },
         },
       },
-      include: {
-        files: {
-          take: args.take,
-          skip: args.skip,
-          orderBy: args.orderBy,
-          where: {
-            userId: auth.userId || undefined,
-            adminId: auth.adminId || undefined,
-            clientId: auth.clientId || undefined,
-          },
-        },
-      },
     });
     if (!folder) {
       throw new BadRequestException('Folder not found');
     }
-    return folder.files;
-  }
-
-  async remove(id: number) {
-    return `This action removes a #${id} media`;
+    const where: Prisma.MediaFileWhereInput = {
+      folderId: folder.id,
+      userId: auth.userId || undefined,
+      adminId: auth.adminId || undefined,
+      clientId: auth.clientId || undefined,
+    };
+    return this.findMany({
+      where,
+      take: Math.abs(args.limit),
+      skip: Math.abs(args.limit * (args.page - 1)),
+      orderBy: args.orderBy,
+    });
   }
 }

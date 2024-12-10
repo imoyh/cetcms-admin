@@ -1,17 +1,33 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuthMixin } from 'src/common/interfaces';
 import { Auth, MediaStoreType } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StringUtil } from 'src/utils/features';
 
-import { FindFolderWhereInput, FindManyFoldersArgs } from '../dto';
+import { FindFolderWhereInput, FindManyFolderArgs } from '../dto';
 
 @Injectable()
-export class MediaFolderService {
+export class MediaFolderService implements AuthMixin {
+  private auth: Auth;
+
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(auth: Auth, input: FindFolderWhereInput) {
+  setAuth(auth: Auth) {
+    return (this.auth = auth);
+  }
+
+  getAuth() {
+    if (!this.auth) {
+      throw new ForbiddenException('Not authorized');
+    } else {
+      return this.auth;
+    }
+  }
+
+  async create(input: FindFolderWhereInput) {
     input.path = StringUtil.safeDirPath(input.path);
+    const auth = this.getAuth();
     const segments = ['', ...input.path.split('/').filter((s) => s)];
     let parentId: number | null = null;
     let currentPath = '';
@@ -93,13 +109,44 @@ export class MediaFolderService {
     });
   }
 
-  async findItemsByPath(auth: Auth, args: FindManyFoldersArgs) {
-    const where = args.where;
-    const path = StringUtil.safeDirPath(where.path);
-    const store = where.store || MediaStoreType.LOCAL;
-    return this.prisma.mediaFolder.findMany({
-      take: args.take,
-      skip: args.skip,
+  async findMany(args: Prisma.MediaFolderFindManyArgs) {
+    const { take, skip, where, orderBy, include } = args;
+    return Promise.all([
+      this.prisma.mediaFolder.count({ where }),
+      this.prisma.mediaFolder.findMany({
+        where,
+        orderBy,
+        include,
+        take: Math.abs(take),
+        skip: Math.abs(skip),
+      }),
+    ]).then(([count, items]) => {
+      return { count, items };
+    });
+  }
+
+  async findItemsByPath(args: FindManyFolderArgs) {
+    const auth = this.getAuth();
+    const inputWhere = args.where;
+    const path = StringUtil.safeDirPath(inputWhere.path);
+    const store = inputWhere.store || MediaStoreType.LOCAL;
+    const where: Prisma.MediaFolderWhereInput = {
+      parent: {
+        path,
+        store,
+      },
+      belong: {
+        some: {
+          userId: auth.userId || undefined,
+          adminId: auth.adminId || undefined,
+          clientId: auth.clientId || undefined,
+        },
+      },
+    };
+    return this.findMany({
+      where,
+      take: Math.abs(args.limit),
+      skip: Math.abs(args.limit * (args.page - 1)),
       orderBy: args.orderBy,
       include: {
         _count: {
@@ -109,28 +156,12 @@ export class MediaFolderService {
           },
         },
       },
-      where: {
-        parent: {
-          path,
-          store,
-        },
-        belong: {
-          some: {
-            userId: auth.userId || undefined,
-            adminId: auth.adminId || undefined,
-            clientId: auth.clientId || undefined,
-          },
-        },
-      },
     });
   }
 
-  async findTreeByStore(auth: Auth, store: MediaStoreType) {
-    const depthInclude = (
-      depth: number,
-      include: Prisma.MediaFolderFindFirstArgs['include'] = {},
-      currentDepth = 1,
-    ) => {
+  async findTreeByStore(store: MediaStoreType) {
+    const auth = this.getAuth();
+    const depthInclude = (depth: number, include: Prisma.MediaFolderInclude = {}, currentDepth = 1) => {
       include._count = {
         select: {
           files: true,

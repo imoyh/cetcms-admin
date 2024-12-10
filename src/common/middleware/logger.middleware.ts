@@ -10,10 +10,10 @@ export class LoggerMiddleware implements NestMiddleware {
     if (baseUrl === '/graphql') {
       const { variables, operationName } = body;
       const variablesString = JSON.stringify(variables);
-      this.logger.log(`GraphQL: [operation] ${operationName}; [variables] ${variablesString};`);
+      this.logger.log(`GraphQL: <${operationName}> - ${variablesString};`);
     } else {
       const bodyString = JSON.stringify(body);
-      this.logger.log(`Request: [method] ${method}; [url] ${baseUrl}; [body] ${bodyString};`);
+      this.logger.log(`Request: <${method}, ${baseUrl}> - ${bodyString};`);
     }
     next();
   }

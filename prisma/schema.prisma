@@ -47,11 +47,20 @@ model Admin {
 
   email String @unique
 
-  /// @HideField({ output: true })
+  /// @HideField({ output: true, match: '@(*Where*|*OrderBy*)' })
   password String
 
-  firstName String @map("first_name")
-  lastName  String @map("last_name")
+  avatarFileId Int?  @map("avatar_file_id")
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  avatar       Json? @map("avatar")
+
+  firstName String? @map("first_name")
+  lastName  String? @map("last_name")
+
+  /// @HideField({ match: '(Create|Update)*Input' })
+  fullName String? @map("full_name")
+
+  isEnabled Boolean @default(true) @map("is_enabled")
 
   roleId Int?       @map("role_id")
   role   AdminRole? @relation(fields: [roleId], references: [id])
@@ -92,12 +101,22 @@ model User {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   uuid String @unique @default(cuid())
 
-  email    String @unique
-  /// @HideField({ output: true })
+  email String @unique
+
+  /// @HideField({ output: true, match: '@(*Where*|*OrderBy*)' })
   password String
 
-  firstName String @map("first_name")
-  lastName  String @map("last_name")
+  avatarFileId Int?  @map("avatar_file_id")
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  avatar       Json? @map("avatar")
+
+  firstName String? @map("first_name")
+  lastName  String? @map("last_name")
+
+  /// @HideField({ match: '(Create|Update)*Input' })
+  fullName String? @map("full_name")
+
+  isEnabled Boolean @default(true) @map("is_enabled")
 
   roleId Int?      @map("role_id")
   role   UserRole? @relation(fields: [roleId], references: [id])
@@ -158,9 +177,7 @@ model Auth {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   userType AuthUserType? @map("auth_user_type")
 
-  /// @HideField({ match: '@(*Create*|*Update*)' })
   loginIp String?   @map("login_ip")
-  /// @HideField({ match: '@(*Create*|*Update*)' })
   loginAt DateTime? @map("login_at")
 
   clientId Int?    @map("client_id")

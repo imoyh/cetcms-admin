@@ -1,10 +1,58 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
+import { Type } from '@nestjs/common';
+import { ArgsType, Field, Int, ObjectType } from '@nestjs/graphql';
+import { GraphQLJSON } from 'graphql-type-json';
 
-@InputType()
-export class PaginationInput {
-  @Field(() => Int, { nullable: true, description: 'Example field (placeholder)' })
-  skip?: number;
+export interface IPagination {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
 
-  @Field(() => Int, { nullable: true, description: 'Example field (placeholder)' })
-  take?: number;
+export interface IPaginated<T> {
+  readonly items: T[];
+  readonly pagination: IPagination;
+}
+
+@ArgsType()
+export class PaginationArgs {
+  @Field(() => GraphQLJSON, { nullable: true, description: 'List filter input' })
+  where?: any;
+
+  @Field(() => GraphQLJSON, { nullable: true, description: 'List sort input' })
+  orderBy?: any;
+
+  @Field(() => Int, { nullable: true, defaultValue: 10, description: 'List page size' })
+  limit?: number;
+
+  @Field(() => Int, { nullable: true, defaultValue: 1, description: 'Current page' })
+  page?: number;
+}
+
+@ObjectType('Pagination')
+export class Pagination implements IPagination {
+  @Field(() => Int)
+  page: number;
+
+  @Field(() => Int)
+  limit: number;
+
+  @Field(() => Int)
+  totalPages: number;
+
+  @Field(() => Int)
+  totalCount: number;
+}
+
+export function Paginated<T>(modelClass: Type<T>): Type<IPaginated<T>> {
+  @ObjectType(`Paginated${modelClass.name}`)
+  abstract class PaginatedClass implements IPaginated<T> {
+    @Field(() => [modelClass], { nullable: true })
+    items: T[];
+
+    @Field(() => Pagination, { nullable: true })
+    pagination: Pagination;
+  }
+
+  return PaginatedClass as Type<IPaginated<T>>;
 }

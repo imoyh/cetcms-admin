@@ -1,29 +1,46 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { FindFolderWhereInput, FindManyFoldersArgs } from 'src/api/media/dto';
+import { FindFolderWhereInput, FindManyFolderArgs } from 'src/api/media/dto';
 import { CurrentAuth } from 'src/common/decorators';
+import { IPaginated, Paginated } from 'src/common/dto';
 import { JwtAuthGuard } from 'src/common/guards';
+import { PaginationPipe } from 'src/common/pipes';
+import { PaginationService } from 'src/common/services';
 import { Auth, MediaFile, MediaFolder, MediaStoreType } from 'src/generated/graphql';
 
 import { MediaFolderService } from '../services';
 
+const PaginatedMediaFolder = Paginated(MediaFolder);
+
 @UseGuards(JwtAuthGuard)
 @Resolver(() => MediaFile)
 export class MediaFolderResolver {
-  constructor(private readonly service: MediaFolderService) {}
+  constructor(
+    private readonly service: MediaFolderService,
+    private readonly pagination: PaginationService,
+  ) {}
 
-  @Query(() => [MediaFolder])
-  findMediaFolders(@CurrentAuth() auth: Auth, @Args() args: FindManyFoldersArgs) {
-    return this.service.findItemsByPath(auth, args);
+  @Query(() => PaginatedMediaFolder)
+  async findManyMediaFolder(@CurrentAuth() auth: Auth, @Args(PaginationPipe) args: FindManyFolderArgs) {
+    this.service.setAuth(auth);
+    return this.service.findItemsByPath(args).then(({ items, count }): IPaginated<MediaFolder> => {
+      const pagination = this.pagination.output(count, args);
+      return {
+        items,
+        pagination,
+      };
+    });
   }
 
   @Query(() => MediaFolder)
   findStoreFolderTree(@CurrentAuth() auth: Auth, @Args('store', { type: () => MediaStoreType }) store: MediaStoreType) {
-    return this.service.findTreeByStore(auth, store);
+    this.service.setAuth(auth);
+    return this.service.findTreeByStore(store);
   }
 
   @Mutation(() => MediaFolder)
   createMediaFolder(@CurrentAuth() auth: Auth, @Args('input') input: FindFolderWhereInput) {
-    return this.service.create(auth, input);
+    this.service.setAuth(auth);
+    return this.service.create(input);
   }
 }

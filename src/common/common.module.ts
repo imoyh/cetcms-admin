@@ -7,6 +7,7 @@ import { AppConfiguration } from 'src/config';
 import * as Factories from './factories';
 import * as Guards from './guards';
 import * as Pipes from './pipes';
+import * as Services from './services';
 import * as Strategies from './strategies';
 
 @Global()
@@ -29,12 +30,14 @@ import * as Strategies from './strategies';
     ...Object.values(Strategies),
     ...Object.values(Factories),
     ...Object.values(Pipes),
+    ...Object.values(Services),
   ],
   exports: [
     ...Object.values(Guards),
     ...Object.values(Strategies),
     ...Object.values(Factories),
     ...Object.values(Pipes),
+    ...Object.values(Services),
   ],
 })
 export class CommonModule {}

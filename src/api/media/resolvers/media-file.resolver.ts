@@ -1,21 +1,30 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { FileUpload, GraphQLUpload } from 'graphql-upload-ts';
-import { FindManyFilesArgs } from 'src/api/media/dto/find-many-files.args';
 import { CurrentAuth } from 'src/common/decorators';
+import { IPaginated, Paginated } from 'src/common/dto';
 import { JwtAuthGuard } from 'src/common/guards';
+import { PaginationPipe } from 'src/common/pipes';
+import { PaginationService } from 'src/common/services';
 import { Auth, MediaFile, MediaFileCreateInput } from 'src/generated/graphql';
 
+import { FindManyFileArgs } from '../dto';
 import { MediaFileService } from '../services';
+
+const PaginatedMediaFile = Paginated(MediaFile);
 
 @UseGuards(JwtAuthGuard)
 @Resolver(() => MediaFile)
 export class MediaFileResolver {
-  constructor(private readonly service: MediaFileService) {}
+  constructor(
+    private readonly service: MediaFileService,
+    private readonly pagination: PaginationService,
+  ) {}
 
   @Mutation(() => MediaFile)
-  createMediaFile(@Args('input') input: MediaFileCreateInput, @CurrentAuth() auth: Auth) {
-    return this.service.create(input, auth);
+  createMediaFile(@CurrentAuth() auth: Auth, @Args('input') input: MediaFileCreateInput) {
+    this.service.setAuth(auth);
+    return this.service.create(input);
   }
 
   @Mutation(() => MediaFile)
@@ -26,9 +35,16 @@ export class MediaFileResolver {
     return this.service.upload(uuid, file);
   }
 
-  @Query(() => [MediaFile])
-  findMediaFiles(@CurrentAuth() auth: Auth, @Args() args: FindManyFilesArgs) {
-    return this.service.findItemsByPath(auth, args);
+  @Query(() => PaginatedMediaFile)
+  async findManyMediaFile(@CurrentAuth() auth: Auth, @Args(PaginationPipe) args: FindManyFileArgs) {
+    this.service.setAuth(auth);
+    return this.service.findItemsByPath(args).then(({ items, count }): IPaginated<MediaFile> => {
+      const pagination = this.pagination.output(count, args);
+      return {
+        items,
+        pagination,
+      };
+    });
   }
 
   @ResolveField(() => String)
