@@ -112,7 +112,7 @@ model AdminRolePermission {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([roleId, permission])
+  @@unique([roleId, permission], name: "rolePermissionIndex")
   @@map("admin_role_permissions")
 }
 
@@ -188,7 +188,7 @@ model UserRolePermission {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([roleId, permission])
+  @@unique([roleId, permission], name: "rolePermissionIndex")
   @@map("user_role_permissions")
 }
 
