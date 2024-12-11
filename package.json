@@ -24,10 +24,12 @@
     "prisma:seed": "ts-node -r tsconfig-paths/register ./src/scripts/prisma-seed.script.ts",
     "prisma:exports": "ts-node -r tsconfig-paths/register ./src/scripts/auto-exports.script.ts",
     "prisma:init": "pnpm prisma:generate && pnpm prisma:exports",
+    "permissions:exports": "pnpm scripts ./src/scripts/scan-permissions.script.ts",
     "prestart:debug": "pnpm prisma:init",
     "prestart:dev": "pnpm prisma:init",
     "prestart": "pnpm prisma:init",
-    "prebuild": "pnpm prisma:init"
+    "prebuild": "pnpm prisma:init",
+    "scripts": "ts-node -r tsconfig-paths/register"
   },
   "dependencies": {
     "@apollo/server": "^4.11.0",

@@ -1,6 +1,6 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { CurrentAuth } from 'src/common/decorators';
+import { CurrentAuth, UsePermission } from 'src/common/decorators';
 import { IPaginated, Paginated } from 'src/common/dto';
 import { JwtAuthGuard } from 'src/common/guards';
 import { PaginationPipe } from 'src/common/pipes';
@@ -12,6 +12,10 @@ import { UserService } from '../services';
 
 const PaginatedUser = Paginated(User);
 
+/**
+ * 用户相关操作
+ * @group User
+ */
 @UseGuards(JwtAuthGuard)
 @Resolver(() => User)
 export class UserResolver {
@@ -20,14 +24,26 @@ export class UserResolver {
     private readonly pagination: PaginationService,
   ) {}
 
+  /**
+   * 创建用户
+   * @param auth
+   * @param input
+   */
+  @UsePermission('ADMIN')
   @Mutation(() => User)
-  createUser(@CurrentAuth({ required: true }) auth: Auth, @Args('input') input: UserCreateInput) {
+  createUser(@CurrentAuth({ requireAdmin: true }) auth: Auth, @Args('input') input: UserCreateInput) {
     this.service.setAuth(auth);
     return this.service.create(input);
   }
 
+  /**
+   * 查询用户列表
+   * @param auth
+   * @param args
+   */
+  @UsePermission('ADMIN')
   @Query(() => PaginatedUser)
-  async findManyUser(@CurrentAuth({ required: true }) auth: Auth, @Args(PaginationPipe) args: FindManyUserArgs) {
+  async findManyUser(@CurrentAuth({ requireAdmin: true }) auth: Auth, @Args(PaginationPipe) args: FindManyUserArgs) {
     this.service.setAuth(auth);
     return this.service.findManyForPagination(args).then(({ items, count }): IPaginated<User> => {
       const pagination = this.pagination.output(count, args);
@@ -38,6 +54,13 @@ export class UserResolver {
     });
   }
 
+  /**
+   * 更新用户信息
+   * @param auth
+   * @param input
+   * @param id
+   */
+  @UsePermission('ADMIN', 'USER')
   @Mutation(() => User)
   updateUser(
     @CurrentAuth({ required: true }) auth: Auth,

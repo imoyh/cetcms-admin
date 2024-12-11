@@ -91,9 +91,29 @@ model AdminRole {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  admins Admin[]
+  admins      Admin[]
+  permissions AdminRolePermission[]
 
   @@map("admin_roles")
+}
+
+model AdminRolePermission {
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  uuid String @unique @default(cuid())
+
+  roleId Int
+  role   AdminRole @relation(fields: [roleId], references: [id])
+
+  permission String
+
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([roleId, permission])
+  @@map("admin_role_permissions")
 }
 
 model User {
@@ -147,9 +167,29 @@ model UserRole {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  users User[]
+  users       User[]
+  permissions UserRolePermission[]
 
   @@map("user_roles")
+}
+
+model UserRolePermission {
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  uuid String @unique @default(cuid())
+
+  roleId Int
+  role   UserRole @relation(fields: [roleId], references: [id])
+
+  permission String
+
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([roleId, permission])
+  @@map("user_role_permissions")
 }
 
 model Auth {

@@ -1,7 +1,7 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import { FileUpload, GraphQLUpload } from 'graphql-upload-ts';
-import { CurrentAuth } from 'src/common/decorators';
+import { CurrentAuth, UsePermission } from 'src/common/decorators';
 import { IPaginated, Paginated } from 'src/common/dto';
 import { JwtAuthGuard } from 'src/common/guards';
 import { PaginationPipe } from 'src/common/pipes';
@@ -13,6 +13,10 @@ import { MediaFileService } from '../services';
 
 const PaginatedMediaFile = Paginated(MediaFile);
 
+/**
+ * 媒体文件管理
+ * @group Media
+ */
 @UseGuards(JwtAuthGuard)
 @Resolver(() => MediaFile)
 export class MediaFileResolver {
@@ -21,12 +25,24 @@ export class MediaFileResolver {
     private readonly pagination: PaginationService,
   ) {}
 
+  /**
+   * 创建媒体文件
+   * @param auth
+   * @param input
+   */
+  @UsePermission('ADMIN', 'USER')
   @Mutation(() => MediaFile)
   createMediaFile(@CurrentAuth() auth: Auth, @Args('input') input: MediaFileCreateInput) {
     this.service.setAuth(auth);
     return this.service.create(input);
   }
 
+  /**
+   * 上传媒体文件
+   * @param uuid
+   * @param file
+   */
+  @UsePermission('ADMIN', 'USER')
   @Mutation(() => MediaFile)
   uploadMediaFile(
     @Args('uuid', { type: () => String }) uuid: string,
@@ -35,6 +51,12 @@ export class MediaFileResolver {
     return this.service.upload(uuid, file);
   }
 
+  /**
+   * 查询媒体文件列表
+   * @param auth
+   * @param args
+   */
+  @UsePermission('ADMIN', 'USER')
   @Query(() => PaginatedMediaFile)
   async findManyMediaFile(@CurrentAuth() auth: Auth, @Args(PaginationPipe) args: FindManyFileArgs) {
     this.service.setAuth(auth);
