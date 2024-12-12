@@ -1,5 +1,7 @@
+import { UseGuards } from '@nestjs/common';
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { UsePermission } from 'src/common/decorators';
+import { JwtAuthGuard } from 'src/common/guards';
 
 import { PermissionChannelType, PermissionInfo } from './entities';
 import { PermissionService } from './permission.service';
@@ -8,6 +10,7 @@ import { PermissionService } from './permission.service';
  * 权限管理操作
  * @group Admin
  */
+@UseGuards(JwtAuthGuard)
 @Resolver()
 export class PermissionResolver {
   constructor(private readonly service: PermissionService) {}

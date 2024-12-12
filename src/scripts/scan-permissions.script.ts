@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import process from 'process';
 
 import { Injectable, Logger } from '@nestjs/common';
 import prettier from 'prettier';
@@ -88,6 +89,7 @@ async function bootstrap() {
   const script = new ScanPermissionsScript();
   script.run().then(() => {
     logger.log('Running in external script mode');
+    process.exit(0);
   });
 }
 

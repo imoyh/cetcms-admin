@@ -21,6 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    // Check if token is valid
     if (!payload?.jti) {
       throw new UnauthorizedException({
         message: 'Invalid token',

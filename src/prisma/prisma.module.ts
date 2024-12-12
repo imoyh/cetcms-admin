@@ -10,10 +10,17 @@ import { PrismaService } from './prisma.service';
 @Global()
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    GraphQLModule.forRootAsync({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'prisma/schema.graphql'),
-      sortSchema: true,
+      inject: [PrismaService],
+      useFactory: (prisma: PrismaService): ApolloDriverConfig => ({
+        autoSchemaFile: join(process.cwd(), 'prisma/schema.graphql'),
+        sortSchema: true,
+        context: (args: any) => {
+          args.prisma = prisma;
+          return args;
+        },
+      }),
     }),
   ],
   providers: [PrismaService, ...Object.values(Inputs)],

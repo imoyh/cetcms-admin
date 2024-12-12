@@ -13,7 +13,32 @@ export class PermissionService {
     return Permissions.filter((p) => p.channels.includes(channel));
   }
 
-  async addPermissionToChannel(info: PermissionInfo, channel: PermissionChannelType, role: UserRole | AdminRole) {
+  async findRolePermission(
+    channel: PermissionChannelType,
+    role: UserRole | AdminRole,
+    resource: string,
+    action: string,
+  ) {
+    const args: Prisma.UserRolePermissionFindUniqueArgs & Prisma.AdminRolePermissionFindUniqueArgs = {
+      where: {
+        rolePermissionIndex: {
+          roleId: role.id,
+          permission: `${resource}:${action}`,
+        },
+      },
+    };
+
+    if (channel === PermissionChannelType.USER) {
+      return this.prisma.userRolePermission.findUnique(args);
+    }
+    if (channel === PermissionChannelType.ADMIN) {
+      return this.prisma.adminRolePermission.findUnique(args);
+    }
+
+    throw new BadRequestException('Not implemented');
+  }
+
+  addPermissionToChannel(info: PermissionInfo, channel: PermissionChannelType, role: UserRole | AdminRole) {
     // Check if permission already exists in the channel
     info = Permissions.find((p: PermissionInfo) => {
       return p.resource === info.resource && p.action === info.action && p.channels.includes(channel);
@@ -49,7 +74,7 @@ export class PermissionService {
 
     // Update admin role
     if (channel === PermissionChannelType.ADMIN) {
-      this.prisma.adminRole.update(args);
+      return this.prisma.adminRole.update(args);
     }
 
     throw new BadRequestException('Not implemented');
