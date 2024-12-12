@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "app:init": "pnpm permissions:exports && pnpm prisma:init",
+    "app:init": "pnpm permissions:scan && pnpm prisma:init",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -25,7 +25,7 @@
     "prisma:init": "pnpm prisma:generate && pnpm prisma:exports",
     "prisma:seed": "pnpm scripts ./src/scripts/prisma-seed.script.ts",
     "prisma:exports": "pnpm scripts ./src/scripts/auto-exports.script.ts",
-    "permissions:exports": "pnpm scripts ./src/scripts/scan-permissions.script.ts",
+    "permissions:scan": "pnpm scripts ./src/scripts/scan-permissions.script.ts",
     "permissions:push": "pnpm scripts ./src/scripts/push-permissions-to-role.script.ts",
     "prestart:debug": "pnpm app:init",
     "prestart:dev": "pnpm app:init",

@@ -450,3 +450,23 @@ enum MediaFileType {
   DOCUMENT
   OTHER
 }
+
+model SystemLogRecord {
+  id   Int    @id @default(autoincrement())
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  uuid String @unique @default(cuid())
+
+  group String
+
+  recordAt DateTime @default(now()) @map("record_at")
+
+  content Json
+
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  createdAt DateTime @default(now()) @map("created_at")
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([group, recordAt], name: "groupRecordAtIndex")
+  @@map("system_log_records")
+}

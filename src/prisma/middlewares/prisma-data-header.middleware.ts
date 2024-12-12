@@ -51,6 +51,7 @@ const handlers: ModelsHandler = {
   ClientLanguage: undefined,
   AdminRolePermission: undefined,
   UserRolePermission: undefined,
+  SystemLogRecord: undefined,
 };
 
 export const PrismaDataHeaderMiddleware: Prisma.Middleware = async (params, next) => {

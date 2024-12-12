@@ -13,7 +13,7 @@ export class AppService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly hostProvider: HostUtil,
+    private readonly util: HostUtil,
   ) {
     this.config = this.configService.get<typeof AppConfiguration>('app');
   }
@@ -38,7 +38,7 @@ export class AppService {
 
   async getAppUrl(localhost = false) {
     const url = await this.app.getUrl();
-    const host = this.config.host || this.hostProvider.getIpAddress();
+    const host = this.config.host || this.util.getIpAddress();
     return url.replace('[::1]', localhost ? '127.0.0.1' : host);
   }
 

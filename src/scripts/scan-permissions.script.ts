@@ -23,6 +23,7 @@ export class ScanPermissionsScript {
     project.addSourceFilesAtPaths('src/**/*.ts');
 
     const permissions: PermissionInfo[] = [];
+    const contextRecords: Record<string, boolean> = {};
 
     // 遍历所有源文件
     for (const sourceFile of project.getSourceFiles()) {
@@ -49,6 +50,14 @@ export class ScanPermissionsScript {
                 .getJsDocs()
                 .map((doc) => doc.getComment())
                 .join('\n') || '-';
+
+            // 校验权限定义是否重复
+            const context = `${className}.${method.getName()}`;
+            if (contextRecords[context]) {
+              throw new Error(`Duplicate permission definition: ${context}`);
+            }
+            contextRecords[context] = true;
+
             permissions.push({
               resource: className || 'Anonymous',
               resourceLabel: classComment,

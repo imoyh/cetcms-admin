@@ -5,7 +5,7 @@ import { NextFunction, Request, Response } from 'express';
 export class LoggerMiddleware implements NestMiddleware {
   private readonly logger = new Logger(LoggerMiddleware.name);
 
-  use(req: Request, res: Response, next: NextFunction) {
+  use(req: Request, _res: Response, next: NextFunction) {
     const { method, baseUrl, body } = req;
     if (baseUrl === '/graphql') {
       const { variables, operationName } = body;
@@ -13,7 +13,7 @@ export class LoggerMiddleware implements NestMiddleware {
       this.logger.log(`GraphQL: <${operationName}> - ${variablesString};`);
     } else {
       const bodyString = JSON.stringify(body);
-      this.logger.log(`Request: <${method}, ${baseUrl}> - ${bodyString};`);
+      this.logger.log(`Request: <${method}, ${baseUrl || '/'}> - ${bodyString};`);
     }
     next();
   }
