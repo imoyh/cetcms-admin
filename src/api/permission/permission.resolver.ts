@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UsePermission } from 'src/common/decorators';
 import { JwtAuthGuard } from 'src/common/guards';
 
@@ -23,5 +23,23 @@ export class PermissionResolver {
   @Query(() => [PermissionInfo])
   findAllPermission(@Args('channel', { type: () => PermissionChannelType }) channel: PermissionChannelType) {
     return this.service.findAll(channel);
+  }
+
+  /**
+   * 新增权限绑定
+   * @param channel
+   * @param targetId
+   * @param resource
+   * @param action
+   */
+  @UsePermission('ADMIN')
+  @Mutation(() => PermissionInfo)
+  addPermissionBind(
+    @Args('channel', { type: () => PermissionChannelType }) channel: PermissionChannelType,
+    @Args('targetId') targetId: string,
+    @Args('resource') resource: string,
+    @Args('action') action: string,
+  ) {
+    return this.service.addPermissionBind(channel, targetId, resource, action);
   }
 }

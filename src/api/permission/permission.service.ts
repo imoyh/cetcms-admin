@@ -9,16 +9,34 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class PermissionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(channel: PermissionChannelType) {
+  /**
+   * Find all permissions for channel
+   * @param channel
+   */
+  findAll(channel: PermissionChannelType) {
     return Permissions.filter((p) => p.channels.includes(channel));
   }
 
-  async findRolePermission(
-    channel: PermissionChannelType,
-    role: UserRole | AdminRole,
-    resource: string,
-    action: string,
-  ) {
+  /**
+   * Find permission by resource and action
+   * @param channel
+   * @param resource
+   * @param action
+   */
+  findPermission(channel: PermissionChannelType, resource: string, action: string): PermissionInfo | undefined {
+    return Permissions.find((p) => p.channels.includes(channel) && p.resource === resource && p.action === action) as
+      | PermissionInfo
+      | undefined;
+  }
+
+  /**
+   * Find permission by role and resource and action
+   * @param channel
+   * @param role
+   * @param resource
+   * @param action
+   */
+  findRolePermission(channel: PermissionChannelType, role: UserRole | AdminRole, resource: string, action: string) {
     const args: Prisma.UserRolePermissionFindUniqueArgs & Prisma.AdminRolePermissionFindUniqueArgs = {
       where: {
         rolePermissionIndex: {
@@ -38,11 +56,15 @@ export class PermissionService {
     throw new BadRequestException('Not implemented');
   }
 
+  /**
+   * Add permission to channel for role
+   * @param info
+   * @param channel
+   * @param role
+   */
   addPermissionToChannel(info: PermissionInfo, channel: PermissionChannelType, role: UserRole | AdminRole) {
     // Check if permission already exists in the channel
-    info = Permissions.find((p: PermissionInfo) => {
-      return p.resource === info.resource && p.action === info.action && p.channels.includes(channel);
-    }) as PermissionInfo;
+    info = this.findPermission(channel, info.resource, info.action);
     if (!info) {
       throw new BadRequestException('Permission not found');
     }
@@ -78,5 +100,35 @@ export class PermissionService {
     }
 
     throw new BadRequestException('Not implemented');
+  }
+
+  /**
+   * Add permission bind to role
+   * @param channel
+   * @param targetId
+   * @param resource
+   * @param action
+   */
+  async addPermissionBind(channel: PermissionChannelType, targetId: string, resource: string, action: string) {
+    // Check if permission already exists in the channel
+    const info = this.findPermission(channel, resource, action);
+    if (!info) {
+      throw new BadRequestException('Permission not found');
+    }
+
+    // Find role
+    let role: UserRole | AdminRole;
+    if (channel === PermissionChannelType.USER) {
+      role = await this.prisma.userRole.findUnique({ where: { uuid: targetId } });
+    }
+    if (channel === PermissionChannelType.ADMIN) {
+      role = await this.prisma.adminRole.findUnique({ where: { uuid: targetId } });
+    }
+
+    // Add permission to role
+    await this.addPermissionToChannel(info, channel, role);
+
+    // Return permission info
+    return info;
   }
 }
