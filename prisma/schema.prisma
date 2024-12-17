@@ -438,8 +438,13 @@ model MediaFile {
 
 enum MediaStoreType {
   LOCAL
+  AWS
+  GCP
+  AZURE
+  QINIU
+  TENCENT
   HUAWEI
-  ALYUN
+  ALIYUN
   OTHER
 }
 

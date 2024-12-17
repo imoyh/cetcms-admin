@@ -13,9 +13,20 @@ export class LogsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  saveMappingByMinuteInterval(group: string, mapping: Map<string, any>): boolean {
+  /**
+   * Save mapping to database by minute interval.
+   * @param group
+   * @param mapping
+   * @param interval
+   */
+  saveMappingByMinuteInterval(group: string, mapping: Map<string, any>, interval: number = 1): boolean {
     // get current date and time
     const date = dayjs();
+
+    // check if current minute is a multiple of interval
+    if (date.minute() % interval) {
+      return false;
+    }
 
     // check if cache directory exists
     const cachePathKey = path.join(this.cachePath, date.format('YYYY-MM-DD'), date.format('HH-mm'));
@@ -36,5 +47,23 @@ export class LogsService {
     });
 
     return true;
+  }
+
+  /**
+   * Find all records by date range of group.
+   * @param group
+   * @param start
+   * @param end
+   */
+  findByDateRangeOfGroup(group: string, start: Date, end: Date) {
+    return this.prisma.systemLogRecord.findMany({
+      where: {
+        group,
+        recordAt: {
+          lt: start,
+          gte: end,
+        },
+      },
+    });
   }
 }

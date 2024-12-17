@@ -49,7 +49,10 @@ export class MediaFolderResolver {
    */
   @UsePermission('ADMIN', 'USER')
   @Query(() => MediaFolder)
-  findStoreFolderTree(@CurrentAuth() auth: Auth, @Args('store', { type: () => MediaStoreType }) store: MediaStoreType) {
+  findMediaFolderTreeByStore(
+    @CurrentAuth() auth: Auth,
+    @Args('store', { type: () => MediaStoreType }) store: MediaStoreType,
+  ) {
     this.service.setAuth(auth);
     return this.service.findTreeByStore(store);
   }

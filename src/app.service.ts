@@ -2,6 +2,7 @@ import { INestApplication, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NextFunction, Request, Response } from 'express';
 import { graphqlUploadExpress } from 'graphql-upload-ts';
+import { LogsInterceptor } from 'src/common/interceptors';
 import { AppConfiguration } from 'src/config';
 import { HostUtil } from 'src/utils/features';
 
@@ -23,14 +24,17 @@ export class AppService {
 
     this.app.use(graphqlUploadExpress({ maxFileSize: 20 * 1000 ** 2, maxFiles: 1 }));
 
-    this.app.use(async (req: Request, res: Response, next: NextFunction) => {
+    this.app.use(async (req: Request, _res: Response, next: NextFunction) => {
       req.app.set('instance', this.app);
       next();
     });
 
     this.app.enableCors();
 
+    this.app.useGlobalInterceptors(new LogsInterceptor());
+
     await this.app.listen(this.config.port, this.config.host);
+
     this.logger.log(`Application is running on: ${this.config.environment}`);
     this.logger.log(`- Local:   ${await this.getAppUrl(true)}`);
     this.logger.log(`- Network: ${await this.getAppUrl()}`);

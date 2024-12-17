@@ -54,15 +54,17 @@ const handlers: ModelsHandler = {
   SystemLogRecord: undefined,
 };
 
-export const PrismaDataHeaderMiddleware: Prisma.Middleware = async (params, next) => {
-  const handler = handlers[params.model];
-  if (handler && handler[params.action]) {
-    if (params.action === 'create' && params.args.data) {
-      params.args.data = handler[params.action](params.args.data);
+export const prismaDataHeader = (): Prisma.Middleware => {
+  return async (params, next) => {
+    const handler = handlers[params.model];
+    if (handler && handler[params.action]) {
+      if (params.action === 'create' && params.args.data) {
+        params.args.data = handler[params.action](params.args.data);
+      }
+      if (params.action === 'findUnique' && params.args.where) {
+        params.args.where = handler[params.action](params.args.where);
+      }
     }
-    if (params.action === 'findUnique' && params.args.where) {
-      params.args.where = handler[params.action](params.args.where);
-    }
-  }
-  return next(params);
+    return next(params);
+  };
 };
