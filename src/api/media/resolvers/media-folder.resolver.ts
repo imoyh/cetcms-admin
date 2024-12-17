@@ -33,7 +33,7 @@ export class MediaFolderResolver {
   @Query(() => PaginatedMediaFolder)
   async findManyMediaFolder(@CurrentAuth() auth: Auth, @Args(PaginationPipe) args: FindManyFolderArgs) {
     this.service.setAuth(auth);
-    return this.service.findItemsByPath(args).then(({ items, count }): IPaginated<MediaFolder> => {
+    return this.service.findManyByStoreAndPath(args).then(({ items, count }): IPaginated<MediaFolder> => {
       const pagination = this.pagination.output(count, args);
       return {
         items,
@@ -48,7 +48,7 @@ export class MediaFolderResolver {
    * @param store
    */
   @UsePermission('ADMIN', 'USER')
-  @Query(() => MediaFolder)
+  @Query(() => MediaFolder, { nullable: true })
   findMediaFolderTreeByStore(
     @CurrentAuth() auth: Auth,
     @Args('store', { type: () => MediaStoreType }) store: MediaStoreType,

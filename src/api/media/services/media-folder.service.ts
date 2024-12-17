@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuthMixin } from 'src/common/interfaces';
-import { Auth, MediaStoreType } from 'src/generated/graphql';
+import { Auth, MediaFolder, MediaStoreType } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StringUtil } from 'src/utils/features';
 
@@ -121,11 +121,11 @@ export class MediaFolderService implements AuthMixin {
         skip: Math.abs(skip),
       }),
     ]).then(([count, items]) => {
-      return { count, items };
+      return { count: (count || 0) as number, items: (items || []) as MediaFolder[] };
     });
   }
 
-  async findItemsByPath(args: FindManyFolderArgs) {
+  async findManyByStoreAndPath(args: FindManyFolderArgs) {
     const auth = this.getAuth();
     const inputWhere = args.where;
     const path = StringUtil.safeDirPath(inputWhere.path);
