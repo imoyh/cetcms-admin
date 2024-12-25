@@ -45,7 +45,9 @@ model Admin {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   uuid String @unique @default(cuid())
 
-  email String @unique
+  email       String  @unique
+  phoneNumber BigInt? @map("phone_number")
+  phonePrefix Int?    @map("phone_prefix")
 
   /// @HideField({ output: true, match: '@(*Where*|*OrderBy*)' })
   password String
@@ -56,9 +58,6 @@ model Admin {
 
   firstName String? @map("first_name")
   lastName  String? @map("last_name")
-
-  /// @HideField({ match: '(Create|Update)*Input' })
-  fullName String? @map("full_name")
 
   isEnabled Boolean @default(true) @map("is_enabled")
 
@@ -74,6 +73,7 @@ model Admin {
   files   MediaFile[]
   folders MediaFolderBelong[]
 
+  @@unique([phonePrefix, phoneNumber], name: "phoneIndex")
   @@map("admins")
 }
 
@@ -82,8 +82,12 @@ model AdminRole {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   uuid String @unique @default(cuid())
 
+  imageFileId Int?  @map("image_file_id")
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  image       Json? @map("image")
+
   name        String  @unique
-  displayName String? @map("display_name")
+  alias       String? @map("alias")
   description String?
 
   /// @HideField({ match: '@(*Create*|*Update*)' })
@@ -105,14 +109,14 @@ model AdminRolePermission {
   roleId Int
   role   AdminRole @relation(fields: [roleId], references: [id])
 
-  permission String
+  resource String
 
   /// @HideField({ match: '@(*Create*|*Update*)' })
   createdAt DateTime @default(now()) @map("created_at")
   /// @HideField({ match: '@(*Create*|*Update*)' })
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([roleId, permission], name: "rolePermissionIndex")
+  @@unique([roleId, resource], name: "roleResourceIndex")
   @@map("admin_role_permissions")
 }
 
@@ -121,7 +125,9 @@ model User {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   uuid String @unique @default(cuid())
 
-  email String @unique
+  email       String  @unique
+  phoneNumber BigInt? @map("phone_number")
+  phonePrefix Int?    @map("phone_prefix")
 
   /// @HideField({ output: true, match: '@(*Where*|*OrderBy*)' })
   password String
@@ -132,9 +138,6 @@ model User {
 
   firstName String? @map("first_name")
   lastName  String? @map("last_name")
-
-  /// @HideField({ match: '(Create|Update)*Input' })
-  fullName String? @map("full_name")
 
   isEnabled Boolean @default(true) @map("is_enabled")
 
@@ -150,6 +153,7 @@ model User {
   files   MediaFile[]
   folders MediaFolderBelong[]
 
+  @@unique([phonePrefix, phoneNumber], name: "phoneIndex")
   @@map("users")
 }
 
@@ -158,8 +162,12 @@ model UserRole {
   /// @HideField({ match: '@(*Create*|*Update*)' })
   uuid String @unique @default(cuid())
 
+  imageFileId Int?  @map("image_file_id")
+  /// @HideField({ match: '@(*Create*|*Update*)' })
+  image       Json? @map("image")
+
   name        String  @unique
-  displayName String? @map("display_name")
+  alias       String? @map("alias")
   description String?
 
   /// @HideField({ match: '@(*Create*|*Update*)' })
@@ -181,14 +189,14 @@ model UserRolePermission {
   roleId Int
   role   UserRole @relation(fields: [roleId], references: [id])
 
-  permission String
+  resource String
 
   /// @HideField({ match: '@(*Create*|*Update*)' })
   createdAt DateTime @default(now()) @map("created_at")
   /// @HideField({ match: '@(*Create*|*Update*)' })
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([roleId, permission], name: "rolePermissionIndex")
+  @@unique([roleId, resource], name: "roleResourceIndex")
   @@map("user_role_permissions")
 }
 

@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FindManyAdminArgs } from 'src/api/admin/dto';
 import { AuthMixin } from 'src/common/interfaces';
-import { AdminCreateInput, Auth } from 'src/generated/graphql';
+import { Admin, AdminCreateInput, Auth } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -43,7 +43,7 @@ export class AdminService implements AuthMixin {
         skip: Math.abs(skip),
       }),
     ]).then(([count, items]) => {
-      return { count, items };
+      return { count: Number(count), items: items as unknown as Admin[] };
     });
   }
 
@@ -53,6 +53,9 @@ export class AdminService implements AuthMixin {
       take: Math.abs(args.limit),
       skip: Math.abs(args.limit * (args.page - 1)),
       orderBy: args.orderBy,
+      include: {
+        role: true,
+      },
     });
   }
 

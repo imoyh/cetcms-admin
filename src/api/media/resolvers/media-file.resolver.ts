@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { FileUpload, GraphQLUpload } from 'graphql-upload-ts';
 import { CurrentAuth, UsePermission } from 'src/common/decorators';
 import { IPaginated, Paginated } from 'src/common/dto';
@@ -67,10 +67,5 @@ export class MediaFileResolver {
         pagination,
       };
     });
-  }
-
-  @ResolveField(() => String)
-  async url(@Parent() media: MediaFile) {
-    return `http://localhost:3325/media${media.path}${media.fileName}`;
   }
 }

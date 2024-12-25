@@ -53,6 +53,9 @@ export class AdminRoleService implements AuthMixin {
       take: Math.abs(args.limit),
       skip: Math.abs(args.limit * (args.page - 1)),
       orderBy: args.orderBy,
+      include: {
+        permissions: true,
+      },
     });
   }
 

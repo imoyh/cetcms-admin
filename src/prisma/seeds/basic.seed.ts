@@ -8,12 +8,12 @@ const logger = new Logger('BasicSeed');
 export const BasicSeed = async (prisma: PrismaService) => {
   const adminRole = AdminRoleInput.create({
     name: 'ROOT',
-    displayName: '根管理員',
+    alias: '根管理員',
     description: 'Root system administrator role',
   });
   const userRole = UserRoleInput.create({
     name: 'MAIN',
-    displayName: '主账户',
+    alias: '主账户',
     description: 'Main user role',
   });
   const admin = AdminInput.create({

@@ -59,8 +59,8 @@ export class ScanPermissionsScript {
             contextRecords[context] = true;
 
             permissions.push({
-              resource: className || 'Anonymous',
-              resourceLabel: classComment,
+              subject: className || 'Anonymous',
+              subjectLabel: classComment,
               group: classGroup,
               action: method.getName(),
               actionLabel: methodComment,

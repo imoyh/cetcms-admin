@@ -1,5 +1,5 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, ResolveField, Resolver, Root } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Request } from 'express';
 import { CurrentAuth, CurrentClient, CurrentRequest } from 'src/common/decorators';
 import { JwtAuthGuard } from 'src/common/guards';
@@ -45,26 +45,5 @@ export class AuthResolver {
   @Query(() => Auth)
   authInfo(@CurrentAuth({ required: true }) auth: Auth) {
     return auth;
-  }
-
-  @ResolveField('email', () => String, { nullable: true })
-  async email(@Root() auth: Auth) {
-    return auth.admin?.email || auth.user?.email || '';
-  }
-
-  @ResolveField('fullName', () => String, { nullable: true })
-  async fullName(@Root() auth: Auth) {
-    if (auth.admin) {
-      return auth.admin.firstName + ' ' + auth.admin.lastName;
-    } else if (auth.user) {
-      return auth.user.firstName + ' ' + auth.user.lastName;
-    } else {
-      return '';
-    }
-  }
-
-  @ResolveField('avatarUrl', () => String, { nullable: true })
-  async avatarUrl() {
-    return 'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-8.png';
   }
 }

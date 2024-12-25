@@ -7,6 +7,7 @@ import { AppConfiguration } from 'src/config';
 import * as Factories from './factories';
 import * as Guards from './guards';
 import * as Pipes from './pipes';
+import * as Resolvers from './resolvers';
 import * as Services from './services';
 import * as Strategies from './strategies';
 
@@ -31,6 +32,7 @@ import * as Strategies from './strategies';
     ...Object.values(Factories),
     ...Object.values(Pipes),
     ...Object.values(Services),
+    ...Object.values(Resolvers),
   ],
   exports: [
     ...Object.values(Guards),

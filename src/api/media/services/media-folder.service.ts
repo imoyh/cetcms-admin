@@ -121,7 +121,7 @@ export class MediaFolderService implements AuthMixin {
         skip: Math.abs(skip),
       }),
     ]).then(([count, items]) => {
-      return { count: (count || 0) as number, items: (items || []) as MediaFolder[] };
+      return { count: (count || 0) as number, items: items as unknown as MediaFolder[] };
     });
   }
 

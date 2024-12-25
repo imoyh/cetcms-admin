@@ -3,10 +3,10 @@ import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 @ObjectType()
 export class PermissionInfo {
   @Field(() => String)
-  resource: string;
+  subject: string;
 
   @Field(() => String)
-  resourceLabel: string;
+  subjectLabel: string;
 
   @Field(() => String)
   group: string;

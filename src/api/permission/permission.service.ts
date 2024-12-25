@@ -20,11 +20,11 @@ export class PermissionService {
   /**
    * Find permission by resource and action
    * @param channel
-   * @param resource
+   * @param subject
    * @param action
    */
-  findPermission(channel: PermissionChannelType, resource: string, action: string): PermissionInfo | undefined {
-    return Permissions.find((p) => p.channels.includes(channel) && p.resource === resource && p.action === action) as
+  findPermission(channel: PermissionChannelType, subject: string, action: string): PermissionInfo | undefined {
+    return Permissions.find((p) => p.channels.includes(channel) && p.subject === subject && p.action === action) as
       | PermissionInfo
       | undefined;
   }
@@ -33,15 +33,15 @@ export class PermissionService {
    * Find permission by role and resource and action
    * @param channel
    * @param role
-   * @param resource
+   * @param subject
    * @param action
    */
-  findRolePermission(channel: PermissionChannelType, role: UserRole | AdminRole, resource: string, action: string) {
+  findRolePermission(channel: PermissionChannelType, role: UserRole | AdminRole, subject: string, action: string) {
     const args: Prisma.UserRolePermissionFindUniqueArgs & Prisma.AdminRolePermissionFindUniqueArgs = {
       where: {
-        rolePermissionIndex: {
+        roleResourceIndex: {
           roleId: role.id,
-          permission: `${resource}:${action}`,
+          resource: `${subject}:${action}`,
         },
       },
     };
@@ -64,14 +64,14 @@ export class PermissionService {
    */
   addPermissionToChannel(info: PermissionInfo, channel: PermissionChannelType, role: UserRole | AdminRole) {
     // Check if permission already exists in the channel
-    info = this.findPermission(channel, info.resource, info.action);
+    info = this.findPermission(channel, info.subject, info.action);
     if (!info) {
       throw new BadRequestException('Permission not found');
     }
 
     // Add permission to role
     const roleId = role.id;
-    const permission = `${info.resource}:${info.action}`;
+    const resource = `${info.subject}:${info.action}`;
 
     // Build upsert arguments
     const args: Prisma.UserRoleUpdateArgs & Prisma.AdminRoleUpdateArgs = {
@@ -80,10 +80,10 @@ export class PermissionService {
         permissions: {
           upsert: {
             where: {
-              rolePermissionIndex: { roleId, permission },
+              roleResourceIndex: { roleId, resource },
             },
-            update: { permission },
-            create: { permission },
+            update: { resource },
+            create: { resource },
           },
         },
       },
@@ -106,12 +106,12 @@ export class PermissionService {
    * Add permission bind to role
    * @param channel
    * @param targetId
-   * @param resource
+   * @param subject
    * @param action
    */
-  async addPermissionBind(channel: PermissionChannelType, targetId: string, resource: string, action: string) {
+  async addPermissionBind(channel: PermissionChannelType, targetId: string, subject: string, action: string) {
     // Check if permission already exists in the channel
-    const info = this.findPermission(channel, resource, action);
+    const info = this.findPermission(channel, subject, action);
     if (!info) {
       throw new BadRequestException('Permission not found');
     }

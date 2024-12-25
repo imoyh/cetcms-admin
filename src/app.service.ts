@@ -2,6 +2,7 @@ import { INestApplication, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NextFunction, Request, Response } from 'express';
 import { graphqlUploadExpress } from 'graphql-upload-ts';
+import { ExtensionsFilter } from 'src/common/filters';
 import { LogsInterceptor } from 'src/common/interceptors';
 import { AppConfiguration } from 'src/config';
 import { HostUtil } from 'src/utils/features';
@@ -30,6 +31,8 @@ export class AppService {
     });
 
     this.app.enableCors();
+
+    this.app.useGlobalFilters(new ExtensionsFilter());
 
     this.app.useGlobalInterceptors(new LogsInterceptor());
 
