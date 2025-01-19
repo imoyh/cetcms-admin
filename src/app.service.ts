@@ -17,30 +17,27 @@ export class AppService {
     private readonly configService: ConfigService,
     private readonly util: HostUtil,
   ) {
-    this.config = this.configService.get<typeof AppConfiguration>('app');
+    this.config = this.configService.get<typeof AppConfiguration>('app')!;
   }
 
   async start(app: INestApplication) {
     this.app = app;
 
-    this.app.use(graphqlUploadExpress({ maxFileSize: 20 * 1000 ** 2, maxFiles: 1 }));
+    const MAX_FILE_SIZE = 20 * 1000 ** 2;
+    const MAX_FILES = 1;
 
-    this.app.use(async (req: Request, _res: Response, next: NextFunction) => {
-      req.app.set('instance', this.app);
-      next();
-    });
-
+    // 分开处理中间件和应用配置
+    // 先处理中间件
+    this.app.use(graphqlUploadExpress({ maxFileSize: MAX_FILE_SIZE, maxFiles: MAX_FILES }));
+    this.app.use(this.setInstanceMiddleware.bind(this));
+    // 再配置应用
     this.app.enableCors();
-
     this.app.useGlobalFilters(new ExtensionsFilter());
-
     this.app.useGlobalInterceptors(new LogsInterceptor());
 
     await this.app.listen(this.config.port, this.config.host);
 
-    this.logger.log(`Application is running on: ${this.config.environment}`);
-    this.logger.log(`- Local:   ${await this.getAppUrl(true)}`);
-    this.logger.log(`- Network: ${await this.getAppUrl()}`);
+    await this.logApplicationUrls();
   }
 
   async getAppUrl(localhost = false) {
@@ -51,5 +48,16 @@ export class AppService {
 
   getApp() {
     return this.app;
+  }
+
+  private setInstanceMiddleware(req: Request, _res: Response, next: NextFunction) {
+    req.app.set('instance', this.app);
+    next();
+  }
+
+  private async logApplicationUrls(): Promise<void> {
+    this.logger.log(`Application is running on: ${this.config.environment}`);
+    this.logger.log(`- Local:   ${await this.getAppUrl(true)}`);
+    this.logger.log(`- Network: ${await this.getAppUrl()}`);
   }
 }

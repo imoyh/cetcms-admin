@@ -31,8 +31,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { uuid: payload.jti },
       include: {
         client: true,
-        user: { include: { role: true } },
-        admin: { include: { role: true } },
+        user: { include: { role: { include: { permissions: true } } } },
+        admin: { include: { role: { include: { permissions: true } } } },
       },
     });
     if (!authInfo) {

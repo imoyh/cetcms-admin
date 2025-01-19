@@ -6,34 +6,25 @@ import { Prisma } from '@prisma/client';
 import { FileUpload } from 'graphql-upload-ts/dist/Upload';
 import { FindManyFileArgs } from 'src/api/media/dto/find-many-file.args';
 import { MediaFolderService } from 'src/api/media/services/media-folder.service';
-import { AuthMixin } from 'src/common/interfaces';
+import { AuthTool } from 'src/common/tools';
 import { Auth, MediaFileCreateInput, MediaStoreType } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StringUtil } from 'src/utils/features';
 
 @Injectable()
-export class MediaFileService implements AuthMixin {
-  private auth: Auth;
-
+export class MediaFileService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly auth: AuthTool,
     private readonly folder: MediaFolderService,
   ) {}
 
   setAuth(auth: Auth) {
-    return (this.auth = this.folder.setAuth(auth));
-  }
-
-  getAuth() {
-    if (!this.auth) {
-      throw new ForbiddenException('Not authorized');
-    } else {
-      return this.auth;
-    }
+    this.auth.set(auth);
   }
 
   async create(input: MediaFileCreateInput) {
-    const auth = this.getAuth();
+    const auth = this.auth.get();
     try {
       input.path = StringUtil.safeDirPath(input.path);
       const folder = await this.folder.create({
@@ -136,7 +127,7 @@ export class MediaFileService implements AuthMixin {
   }
 
   async findItemsByPath(args: FindManyFileArgs) {
-    const auth = this.getAuth();
+    const auth = this.auth.get();
     const inputWhere = args.where || {};
     const store = inputWhere.store || MediaStoreType.LOCAL;
     const path = StringUtil.safeDirPath(inputWhere.path);

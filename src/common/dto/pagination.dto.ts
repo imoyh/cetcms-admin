@@ -56,3 +56,21 @@ export function Paginated<T>(modelClass: Type<T>): Type<IPaginated<T>> {
 
   return PaginatedClass as Type<IPaginated<T>>;
 }
+
+export interface INoPaginationItems<T> {
+  readonly items: T[];
+  readonly totalCount: number;
+}
+
+export function NoPaginationItems<T>(modelClass: Type<T>): Type<INoPaginationItems<T>> {
+  @ObjectType(`NoPagination${modelClass.name}Items`)
+  abstract class NoPaginationItemsClass implements INoPaginationItems<T> {
+    @Field(() => [modelClass], { nullable: true })
+    items: T[];
+
+    @Field(() => Int, { nullable: true })
+    totalCount: number;
+  }
+
+  return NoPaginationItemsClass as Type<INoPaginationItems<T>>;
+}

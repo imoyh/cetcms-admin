@@ -1,26 +1,19 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FindManyUserArgs } from 'src/api/user/dto';
-import { AuthMixin } from 'src/common/interfaces';
+import { AuthTool } from 'src/common/tools';
 import { Auth, UserCreateInput } from 'src/generated/graphql';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class UserService implements AuthMixin {
-  private auth: Auth;
-
-  constructor(private readonly prisma: PrismaService) {}
+export class UserService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auth: AuthTool,
+  ) {}
 
   setAuth(auth: Auth) {
-    return (this.auth = auth);
-  }
-
-  getAuth() {
-    if (!this.auth) {
-      throw new ForbiddenException('Not authorized');
-    } else {
-      return this.auth;
-    }
+    this.auth.set(auth);
   }
 
   create(input: UserCreateInput) {

@@ -1,13 +1,21 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PermissionChannelType, PermissionInfo } from 'src/api/permission/entities';
-import { AdminRole, UserRole } from 'src/generated/graphql';
+import { AuthTool } from 'src/common/tools';
+import { AdminRole, Auth, UserRole } from 'src/generated/graphql';
 import { Permissions } from 'src/generated/permissions';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class PermissionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auth: AuthTool,
+  ) {}
+
+  setAuth(auth: Auth) {
+    this.auth.set(auth);
+  }
 
   /**
    * Find all permissions for channel
@@ -116,6 +124,11 @@ export class PermissionService {
       throw new BadRequestException('Permission not found');
     }
 
+    // Check auth user has permission to add permission bind
+    if (!this.auth.checkPermission(`${subject}:${action}`)) {
+      throw new ForbiddenException('This role does not have permission to add permission bind');
+    }
+
     // Find role
     let role: UserRole | AdminRole;
     if (channel === PermissionChannelType.USER) {
@@ -130,5 +143,48 @@ export class PermissionService {
 
     // Return permission info
     return info;
+  }
+
+  /**
+   * Remove permission bind from role
+   * @param channel
+   * @param targetId
+   * @param subject
+   * @param action
+   */
+  async removePermissionBind(channel: PermissionChannelType, targetId: string, subject: string, action: string) {
+    // Check auth user has permission to remove permission bind
+    if (!this.auth.checkPermission(`${subject}:${action}`)) {
+      throw new ForbiddenException('This role does not have permission to remove permission bind');
+    }
+
+    // should not delete permission from user role
+    if (channel === PermissionChannelType.USER) {
+      const role = await this.prisma.userRole.findUnique({ where: { uuid: targetId } });
+      await this.prisma.userRolePermission.delete({
+        where: {
+          roleResourceIndex: {
+            roleId: role.id,
+            resource: `${subject}:${action}`,
+          },
+        },
+      });
+    }
+
+    // should not delete permission from admin role
+    if (channel === PermissionChannelType.ADMIN) {
+      const role = await this.prisma.adminRole.findUnique({ where: { uuid: targetId } });
+      await this.prisma.adminRolePermission.delete({
+        where: {
+          roleResourceIndex: {
+            roleId: role.id,
+            resource: `${subject}:${action}`,
+          },
+        },
+      });
+    }
+
+    // Return permission info
+    return this.findPermission(channel, subject, action);
   }
 }

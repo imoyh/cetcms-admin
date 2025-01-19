@@ -7,6 +7,7 @@ import minimist from 'minimist';
 import { PermissionChannelType, PermissionInfo } from 'src/api/permission/entities';
 import { PermissionService } from 'src/api/permission/permission.service';
 import { AppModule } from 'src/app.module';
+import { AuthTool } from 'src/common/tools';
 import { AdminRole, UserRole } from 'src/generated/graphql';
 import { Permissions } from 'src/generated/permissions';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -20,31 +21,43 @@ export class PushPermissionsToRoleScript {
   ) {}
 
   async run(roleId: number, channel: PermissionChannelType) {
+    if (!roleId || !channel) {
+      throw new Error('roleId and channel are required');
+    }
+
+    this.logger.log(`Starting to push permissions to role ${roleId} in channel ${channel}`);
+
     let role: AdminRole | UserRole;
     if (channel === PermissionChannelType.ADMIN) {
       role = await this.prisma.adminRole.findUnique({ where: { id: roleId } });
-    }
-    if (channel === PermissionChannelType.USER) {
+    } else if (channel === PermissionChannelType.USER) {
       role = await this.prisma.userRole.findUnique({ where: { id: roleId } });
+    } else {
+      throw new Error(`Invalid channel type: ${channel}`);
     }
+
     if (!role) {
       throw new Error(`Role with id ${roleId} not found in channel ${channel}`);
     }
 
     const permissions = Permissions.filter((p) => p.channels.includes(channel)) as PermissionInfo[];
     const chunkPermissions = chunk(permissions, 100);
-    for (const permissions of chunkPermissions) {
-      this.logger.debug(`Pushing ${permissions.length} permissions to role ${roleId} in channel ${channel}`);
-      await this.prisma
-        .$transaction(permissions.map((info) => this.service.addPermissionToChannel(info, channel, role)))
-        .finally(() => {
-          this.logger.debug(
-            `Finished pushing ${permissions.length} permissions to role ${roleId} in channel ${channel}`,
-          );
-        });
+
+    let processedCount = 0;
+    for (const permissionChunk of chunkPermissions) {
+      try {
+        await this.prisma.$transaction(
+          permissionChunk.map((info) => this.service.addPermissionToChannel(info, channel, role)),
+        );
+        processedCount += permissionChunk.length;
+        this.logger.debug(`Processed ${processedCount}/${permissions.length} permissions`);
+      } catch (error) {
+        this.logger.error(`Failed to process permissions chunk: ${error.message}`);
+        throw error;
+      }
     }
 
-    this.logger.debug(`Pushing permissions to role ${roleId} in channel ${channel}`);
+    this.logger.log(`Successfully pushed ${permissions.length} permissions to role ${roleId} in channel ${channel}`);
   }
 }
 // This is the entry point of the application
@@ -54,8 +67,8 @@ async function bootstrap() {
   const channel = argv.channel?.toUpperCase() as PermissionChannelType;
 
   const app = await NestFactory.create(AppModule);
-  const service = app.get(PermissionService);
   const prisma = app.get(PrismaService);
+  const service = new PermissionService(prisma, new AuthTool({}));
 
   const logger = new Logger(PushPermissionsToRoleScript.name);
   const script = new PushPermissionsToRoleScript(prisma, service);

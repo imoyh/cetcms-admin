@@ -72,6 +72,7 @@ export class AuthService {
     const hashPassword = user?.password || admin?.password;
     if (!hashPassword || !CryptoUtil.checkPassword(password, hashPassword)) {
       throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
         message: 'Invalid email or password',
       });
     }

@@ -10,6 +10,7 @@ import * as Pipes from './pipes';
 import * as Resolvers from './resolvers';
 import * as Services from './services';
 import * as Strategies from './strategies';
+import * as Tools from './tools';
 
 @Global()
 @Module({
@@ -33,6 +34,7 @@ import * as Strategies from './strategies';
     ...Object.values(Pipes),
     ...Object.values(Services),
     ...Object.values(Resolvers),
+    ...Object.values(Tools),
   ],
   exports: [
     ...Object.values(Guards),
@@ -40,6 +42,7 @@ import * as Strategies from './strategies';
     ...Object.values(Factories),
     ...Object.values(Pipes),
     ...Object.values(Services),
+    ...Object.values(Tools),
   ],
 })
 export class CommonModule {}

@@ -116,6 +116,9 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
+      minimist:
+        specifier: ^1.2.8
+        version: 1.2.8
       mysql2:
         specifier: ^3.11.3
         version: 3.11.5
@@ -228,9 +231,6 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.17.9)(ts-node@10.9.2(@types/node@20.17.9)(typescript@5.7.2))
-      minimist:
-        specifier: ^1.2.8
-        version: 1.2.8
       prettier:
         specifier: ^3.2.5
         version: 3.4.2
